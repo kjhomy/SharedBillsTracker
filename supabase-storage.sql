@@ -13,6 +13,7 @@ insert into storage.buckets (id, name, public)
 values ('receipts', 'receipts', false)
 on conflict (id) do nothing;
 
+drop policy if exists "household members can upload receipts" on storage.objects;
 create policy "household members can upload receipts"
 on storage.objects for insert
 with check (
@@ -20,6 +21,7 @@ with check (
   and is_household_member((storage.foldername(name))[1]::uuid)
 );
 
+drop policy if exists "household members can view receipts" on storage.objects;
 create policy "household members can view receipts"
 on storage.objects for select
 using (

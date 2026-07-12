@@ -51,7 +51,7 @@ export default async function BillsPage() {
   return (
     <div className="min-h-screen px-6 py-10">
       <div className="max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="font-display text-2xl font-semibold text-ink">Bills</h1>
           <Link
             href="/bills/new"
@@ -60,6 +60,9 @@ export default async function BillsPage() {
             Add bill
           </Link>
         </div>
+        <Link href="/bills/recurring" className="block text-xs text-ink/60 underline mb-6">
+          Manage recurring bills
+        </Link>
 
         {bills.length === 0 ? (
           <div className="border border-line rounded-xl p-4 bg-white">

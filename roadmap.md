@@ -32,6 +32,22 @@ Goal: you can log a real bill and see it stored, no splitting logic yet.
 
 ---
 
+## Added outside the original phases — Recurring bills
+
+Not originally planned as its own item (Phase 4 assumed recurring-bill detection existed
+without specifying how). Added because manually re-entering a fixed bill like rent every
+month isn't realistic.
+
+- [x] `recurring_bills` table — fixed-amount templates only (due day of month, perpetual or end-dated), `supabase-recurring.sql`
+- [x] Daily-scheduled Postgres function (`pg_cron`) generates the month's `transactions` row when a template's clamped due day matches today
+- [x] `/bills/recurring` list + `/bills/recurring/new` form (category, payee, amount, due day, perpetual checkbox)
+
+**Deliberately out of scope:** variable-amount bills (energy, water) — those still get logged manually via Add Bill, since auto-generating with a guessed amount would be actively wrong.
+
+**One-time manual step:** run `supabase-recurring.sql` in the Supabase SQL Editor.
+
+---
+
 ## Phase 2 — Split calculation (the tricky part)
 
 Goal: every bill automatically calculates who owes what, based on membership + ratios at the time.
