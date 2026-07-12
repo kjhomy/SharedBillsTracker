@@ -41,6 +41,10 @@ drop policy if exists "members can update recurring bills" on recurring_bills;
 create policy "members can update recurring bills" on recurring_bills
   for update using (is_household_member(household_id));
 
+drop policy if exists "members can delete recurring bills" on recurring_bills;
+create policy "members can delete recurring bills" on recurring_bills
+  for delete using (is_household_member(household_id));
+
 -- Shared by both the daily generator and the backfill function below,
 -- so the "which day does this bill actually land on" logic only lives
 -- in one place. Clamps to the last day of the month for short months.

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
+import NavHeader from '../nav-header';
 
 function formatAmount(amount) {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
@@ -49,7 +50,9 @@ export default async function BillsPage() {
   );
 
   return (
-    <div className="min-h-screen px-6 py-10">
+    <div className="min-h-screen">
+      <NavHeader />
+      <div className="px-6 py-10">
       <div className="max-w-md mx-auto">
         <div className="flex items-center justify-between mb-2">
           <h1 className="font-display text-2xl font-semibold text-ink">Bills</h1>
@@ -106,6 +109,7 @@ export default async function BillsPage() {
             ))}
           </ul>
         )}
+      </div>
       </div>
     </div>
   );

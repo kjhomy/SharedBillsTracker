@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
+import NavHeader from '../../nav-header';
+import DeleteRecurringButton from './delete-recurring-button';
 
 function formatDate(date) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -43,7 +45,9 @@ export default async function RecurringBillsPage() {
     .order('due_day_of_month');
 
   return (
-    <div className="min-h-screen px-6 py-10">
+    <div className="min-h-screen">
+      <NavHeader />
+      <div className="px-6 py-10">
       <div className="max-w-md mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-display text-2xl font-semibold text-ink">Recurring bills</h1>
@@ -86,15 +90,22 @@ export default async function RecurringBillsPage() {
                     {formatAmount(bill.amount)}
                   </p>
                 </div>
-                {!bill.active && (
-                  <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full bg-line text-ink/70">
-                    paused
-                  </span>
-                )}
+                <div className="flex items-center justify-between mt-2">
+                  {!bill.active ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-line text-ink/70">
+                      paused
+                    </span>
+                  ) : <span />}
+                  <DeleteRecurringButton
+                    id={bill.id}
+                    label={bill.categories?.name ?? bill.payee}
+                  />
+                </div>
               </li>
             ))}
           </ul>
         )}
+      </div>
       </div>
     </div>
   );
