@@ -30,20 +30,34 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
     setErrorMessage('');
     const supabase = createClient();
 
-    const { error } = await supabase.from('recurring_bills').insert({
-      created_by: userId,
-      household_id: householdId,
-      category_id: form.category_id,
-      payee: form.payee || null,
-      amount: form.amount,
-      due_day_of_month: form.due_day_of_month,
-      start_date: form.start_date,
-      end_date: perpetual ? null : form.end_date || null,
-    });
+    const { data: newBill, error } = await supabase
+      .from('recurring_bills')
+      .insert({
+        created_by: userId,
+        household_id: householdId,
+        category_id: form.category_id,
+        payee: form.payee || null,
+        amount: form.amount,
+        due_day_of_month: form.due_day_of_month,
+        start_date: form.start_date,
+        end_date: perpetual ? null : form.end_date || null,
+      })
+      .select('id')
+      .single();
 
     if (error) {
       setStatus('error');
       setErrorMessage(error.message);
+      return;
+    }
+
+    const { error: backfillError } = await supabase.rpc('backfill_recurring_bill', {
+      p_recurring_bill_id: newBill.id,
+    });
+
+    if (backfillError) {
+      setStatus('error');
+      setErrorMessage(`Saved, but backfilling past months failed: ${backfillError.message}`);
       return;
     }
 
