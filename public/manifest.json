@@ -1,0 +1,10 @@
+{
+  "name": "Household Bills",
+  "short_name": "Bills",
+  "description": "Split household bills fairly, as membership changes over time.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F4EF",
+  "theme_color": "#16303A",
+  "icons": []
+}
