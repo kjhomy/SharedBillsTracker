@@ -11,6 +11,7 @@ function formatAmount(amount) {
 export default function SettleForm({ householdId, currentMemberId, pair }) {
   const router = useRouter();
   const [checked, setChecked] = useState({}); // category_id -> boolean
+  const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | saving | error
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -40,7 +41,7 @@ export default function SettleForm({ householdId, currentMemberId, pair }) {
     setErrorMessage('');
     const supabase = createClient();
 
-    const { error } = await supabase.rpc('record_settlement', {
+    const { data: settlementId, error } = await supabase.rpc('record_settlement', {
       p_household_id: householdId,
       p_from_member_id: pair.debtorId,
       p_to_member_id: pair.creditorId,
@@ -53,8 +54,30 @@ export default function SettleForm({ householdId, currentMemberId, pair }) {
       return;
     }
 
+    if (file) {
+      const path = `${householdId}/${settlementId}/${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('receipts').upload(path, file);
+
+      if (uploadError) {
+        setStatus('error');
+        setErrorMessage(`Settlement saved, but the attachment upload failed: ${uploadError.message}`);
+        return;
+      }
+
+      const { error: attachmentError } = await supabase
+        .from('attachments')
+        .insert({ settlement_id: settlementId, file_url: path });
+
+      if (attachmentError) {
+        setStatus('error');
+        setErrorMessage(`Settlement saved, but the attachment couldn't be linked: ${attachmentError.message}`);
+        return;
+      }
+    }
+
     setStatus('idle');
     setChecked({});
+    setFile(null);
     router.refresh();
   }
 
@@ -89,6 +112,16 @@ export default function SettleForm({ householdId, currentMemberId, pair }) {
       <div className="flex items-center justify-between pt-2 border-t border-line">
         <span className="text-sm text-ink/70">Selected</span>
         <span className="text-sm font-semibold text-ink">{formatAmount(selectedTotal)}</span>
+      </div>
+
+      <div>
+        <label className="block text-xs text-ink/60 mb-1">Proof of payment (optional)</label>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="w-full text-sm"
+        />
       </div>
 
       <button
