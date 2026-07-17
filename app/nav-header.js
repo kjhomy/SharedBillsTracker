@@ -57,6 +57,20 @@ export default function NavHeader() {
             >
               Recurring bills
             </Link>
+            <Link
+              href="/household"
+              onClick={() => setMenuOpen(false)}
+              className="block px-3 py-2 text-sm text-ink hover:bg-paper"
+            >
+              Household members
+            </Link>
+            <Link
+              href="/settle"
+              onClick={() => setMenuOpen(false)}
+              className="block px-3 py-2 text-sm text-ink hover:bg-paper"
+            >
+              Settle up
+            </Link>
             <button
               type="button"
               onClick={handleSignOut}

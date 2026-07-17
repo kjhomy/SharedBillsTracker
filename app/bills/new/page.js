@@ -25,6 +25,11 @@ export default async function NewBillPage() {
     .eq('type', 'expense')
     .order('name');
 
+  const { data: members } = await supabase
+    .from('household_members')
+    .select('id, name')
+    .eq('household_id', household.household_id);
+
   return (
     <div className="min-h-screen">
       <NavHeader />
@@ -36,6 +41,7 @@ export default async function NewBillPage() {
           </p>
           <AddBillForm
             categories={categories ?? []}
+            members={members ?? []}
             householdId={household.household_id}
             userId={user.id}
           />

@@ -17,7 +17,7 @@
 
 ---
 
-## Phase 1 — Core bill logging (next up)
+## Phase 1 — Core bill logging
 
 Goal: you can log a real bill and see it stored, no splitting logic yet.
 
@@ -26,9 +26,9 @@ Goal: you can log a real bill and see it stored, no splitting logic yet.
 - [x] Wire up **attachment upload** — Supabase Storage bucket for receipts/screenshots, linked via `attachments.transaction_id`
 - [x] Build a simple **bill list page** (no dashboard yet) just to confirm bills are saving and readable
 
-**One-time manual step before this works:** run `supabase-storage.sql` in the Supabase SQL Editor (same way `supabase-schema.sql` was run) — it creates the private `receipts` bucket and its RLS policies. Confirmed via the API that this bucket doesn't exist yet in your project.
-
-**Definition of done:** you can add a bill with a receipt photo on your phone and see it appear in a list. *(Code is in place and builds cleanly; not yet click-tested in a browser — do that after running the storage SQL.)*
+**Definition of done:** you can add a bill with a receipt photo on your phone and see it appear in a list. ✅ Click-tested — added a real bill with a photo and it worked end to end.
+- [x] PDF receipts — turned out to already work (file input accepts PDFs, storage bucket has no mime restriction, receipt link opens PDFs fine in browser); no build needed
+- [x] **Delete bill** — added `supabase-delete-bills.sql` (missing RLS delete policies on `transactions`, `attachments`, and the `receipts` storage bucket — none existed before) and applied it directly to the project via the Supabase Management API, plus a delete button on the bill list that removes the receipt file then the transaction row. ✅ Click-tested — deleted a bill through the running app (real RLS-authenticated path, not just the admin bypass used to apply the migration), confirmed in the DB that the transaction, attachment, and storage file were all removed cleanly
 
 ---
 
@@ -52,13 +52,17 @@ month isn't realistic.
 
 Goal: every bill automatically calculates who owes what, based on membership + ratios at the time.
 
-- [ ] Implement the **date-slicing split algorithm** from the spec: slice bill period wherever membership or ratio changes, apply ratios per slice, sum per member
-- [ ] Write this as a Supabase Edge Function or a Next.js server action — triggered on bill creation/edit
-- [ ] Populate `transaction_splits` automatically from this calculation
-- [ ] Build **Members & Ratios** screen — add/edit members (joined/left dates), configure per-category ratios with effective-date history
-- [ ] Handle the **0%-until-configured** fallback and surface it as a warning (ties into Phase 4 flags)
+- [x] Implement the **date-slicing split algorithm** — `supabase-splits.sql`, three Postgres functions (`compute_split`, `save_transaction_split`, `recompute_household_splits`), applied directly via the Supabase Management API. Slices a bill's period wherever membership or a category ratio changes, applies the ratio in effect per slice, sums per member with largest-remainder penny-rounding so shares always sum exactly to the bill amount
+- [x] Written as Postgres functions (not an Edge Function or server action) — matches the existing `supabase-recurring.sql` precedent, callable via `supabase.rpc()`, keeps the app at zero server actions
+- [x] `save_transaction_split` / `recompute_household_splits` populate `transaction_splits` automatically, re-runnable idempotently (verified: repeated calls don't duplicate rows)
+- [x] Handle the **0%-until-configured** fallback — an active member with no ratio row is treated as 0% for that slice, not redistributed to others; the resulting gap (split sum < bill amount) is left visible for Phase 4's flags to surface later, not silently patched now
+- [x] **Household members** page (`/household`) — edit joined/left dates per member, saving triggers `recompute_household_splits` automatically. Ratio editor (per-category, with effective-date history) still to build.
+- [x] Wired into the **Add Bill** form: period is now required, a debounced live preview calls `compute_split` via RPC as soon as category/amount/period are filled in (with a warning if shares don't sum to the full amount), and `save_transaction_split` runs via RPC right after the transaction/attachment save. ✅ Click-tested — form saves correctly and preview renders (showing £0.00/0% as expected, since no ratios are configured yet)
+- [x] Built the **ratio editor** half of Members & Ratios (`app/household/edit-ratios-form.js`) — one card per expense category, percentage input per member, editable "effective from" date (defaults to today, backdatable), running total flagged if it's not 100%. Same-day edits update the ratio in place; a different date closes out the old version and creates a new one, preserving history; either way triggers `recompute_household_splits`. Smart auto-fill: once exactly one member's field is left untouched, it auto-fills with whatever's needed to reach 100% and keeps recalculating until directly edited. ✅ Click-tested and confirmed working, including a fix for a bug where changing only the effective-from date (same percentage) didn't enable Save — that now correctly updates the existing ratio's start date in place rather than being a no-op
 
-**Definition of done:** adding a bill shows a correct live split preview, and changing a ratio or member's dates recalculates historical splits correctly.
+**Definition of done:** adding a bill shows a correct live split preview, and changing a ratio or member's dates recalculates historical splits correctly. ✅ All click-tested and confirmed working end to end — Phase 2 complete.
+
+**Verified during testing:** the algorithm correctly produces intentional gaps (not fabricated splits) when a bill's period predates a member's `joined_date` — this surfaced that the 8 existing "Joseph Adeyemi" £2000/month rent bills (Nov 2025–Jul 2026) all predated both members' recorded join dates. Fixed via the Household members page — join dates corrected, `recompute_household_splits` ran automatically, all 8 rent bills now have real splits.
 
 ---
 
@@ -66,13 +70,19 @@ Goal: every bill automatically calculates who owes what, based on membership + r
 
 Goal: the app answers "who owes who, and for what" at a glance.
 
-- [ ] Build **Dashboard** — itemized pairwise balance breakdown (per category, not just one number), external unpaid-bills list, activity feed
-- [ ] Implement **debt simplification** for 3+ members (net each person's position, greedily match creditors to debtors) — trivial at 2 people, needed once extensible
+- [x] Added **`paid_by_member_id`** to `transactions` — the schema had no way to record who actually fronted the money for a bill, which blocked balance calculation entirely (`transaction_splits` only ever recorded fair *shares*, not who was owed)
+- [x] **Balance engine** (`supabase-balances.sql`) — `household_balances(household_id)` returns itemized pairwise-per-category unsettled amounts (nets out anything already paid back via `settlement_allocations`); `net_balances(household_id)` sums each member's overall position
+- [x] **Debt simplification** (`lib/debtSimplification.js`) — plain client-side JS (greedy array matching over `net_balances` output), not a Postgres function, since it's pure post-processing with no RLS/data-access concerns of its own. Built generally even though it's trivial at 2 people, per the original plan
+- [x] Build **Dashboard** (`app/page.js`, replacing the old placeholder home page) — "Owed to creditors" (external debt, aggregated by category + payee — e.g. "Rent — Joseph Adeyemi: £16,000"), "Between household members" (simplified net + per-category detail), itemized unpaid-bills detail list, and a "Recent activity" placeholder pending Settle Up
 - [ ] Build **Settle Up** screen — itemized checklist to settle per-category or in bulk, writing to `settlements` + `settlement_allocations`
 - [ ] Attachment support on settlements (payment screenshots), reusing the same Storage bucket/table as bill receipts
-- [ ] Generate **activity feed entries** from Settlement + SettlementAllocation data (per-category text vs bulk text, per earlier decision)
+- [ ] Generate **activity feed entries** from Settlement + SettlementAllocation data (per-category text vs bulk text) — the "earlier decision" the roadmap referenced lived in the spec doc, which doesn't actually exist in this repo (confirmed missing). Proposed default: single-category settlement reads "X settled [Category] with Y — £N"; multi-category reads "X settled up with Y — £N across N categories"
 
-**Definition of done:** the dashboard replaces your Excel tracker for day-to-day use — you can see, log, and settle balances without leaving the app.
+**Course correction (caught by you, not by testing):** the first version of this defaulted `paid_by_member_id` to whoever logged the bill (`created_by`) and backfilled all 8 historical rent bills that way — wrongly assuming "logged it" means "paid it out of pocket." You corrected the model: logging a bill only records an obligation to an *external* creditor; it creates **no debt between household members** until a payment is explicitly recorded. Fixed via `supabase-balances-fix.sql` — cleared the incorrect backfill, added `paid_status = 'paid'` to `household_balances`'s filter, reverted the recurring-bill generator to not assume a payer (and dropped `paid_by_member_id` from `recurring_bills` entirely, since a template-level default would reintroduce the same mistake) — and added the actual explicit mechanism: a "Mark as paid by…" control on the bill list (`app/bills/mark-paid-control.js`) that's now the *only* path that can ever set a payer. Also fixed a grammar bug you caught after: "You owes Kofi" — the debtor/creditor sentence now conjugates "owe" vs "owes" based on whether the debtor is the signed-in user.
+
+**Bug found and fixed during this work (unrelated to the above, caught while pulling real ratio data for balance testing):** the ratio editor's "effective from" date always defaulted to today instead of the existing ratio's start date, so opening an already-configured category and clicking Save (without touching anything) would silently shift that ratio's start date to today. This had already corrupted one real row (Council Tax, `effective_to` ended up before `effective_from`). Fixed the default in `edit-ratios-form.js`, deleted the corrupted row, and added a `category_ratios_effective_range_valid` check constraint (`supabase-ratio-integrity.sql`) so this class of bug can't silently corrupt data again — it'll error loudly instead.
+
+**Definition of done:** the dashboard replaces your Excel tracker for day-to-day use — you can see, log, and settle balances without leaving the app. *(Owed-to-creditors and between-member balances are live and click-tested; Settle Up and the activity feed are still to build.)*
 
 ---
 

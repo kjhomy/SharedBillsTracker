@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -14,16 +14,69 @@ const initialForm = {
   notes: '',
 };
 
-export default function AddBillForm({ categories, householdId, userId }) {
+function formatAmount(amount) {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
+}
+
+export default function AddBillForm({ categories, members, householdId, userId }) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | saving | error
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [preview, setPreview] = useState(null);
+  const [previewStatus, setPreviewStatus] = useState('idle'); // idle | loading | error | ready
+  const [previewError, setPreviewError] = useState('');
+
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
+
+  const memberName = (id) => members.find((m) => m.id === id)?.name ?? 'Unknown';
+
+  // Live split preview — recomputed whenever the fields it depends on are
+  // all filled in. Debounced slightly so it doesn't fire on every keystroke.
+  useEffect(() => {
+    const ready = form.category_id && form.amount && form.period_start && form.period_end;
+
+    if (!ready) {
+      setPreview(null);
+      setPreviewStatus('idle');
+      return;
+    }
+
+    if (form.period_end < form.period_start) {
+      setPreview(null);
+      setPreviewStatus('error');
+      setPreviewError('Period end is before period start.');
+      return;
+    }
+
+    setPreviewStatus('loading');
+    const timeout = setTimeout(async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc('compute_split', {
+        p_household_id: householdId,
+        p_category_id: form.category_id,
+        p_amount: form.amount,
+        p_period_start: form.period_start,
+        p_period_end: form.period_end,
+      });
+
+      if (error) {
+        setPreview(null);
+        setPreviewStatus('error');
+        setPreviewError(error.message);
+        return;
+      }
+
+      setPreview(data ?? []);
+      setPreviewStatus('ready');
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [form.category_id, form.amount, form.period_start, form.period_end, householdId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -39,8 +92,8 @@ export default function AddBillForm({ categories, householdId, userId }) {
         category_id: form.category_id || null,
         payee: form.payee || null,
         amount: form.amount,
-        period_start: form.period_start || null,
-        period_end: form.period_end || null,
+        period_start: form.period_start,
+        period_end: form.period_end,
         due_date: form.due_date || null,
         notes: form.notes || null,
       })
@@ -74,6 +127,16 @@ export default function AddBillForm({ categories, householdId, userId }) {
         setErrorMessage(`Bill saved, but the receipt couldn't be linked: ${attachmentError.message}`);
         return;
       }
+    }
+
+    const { error: splitError } = await supabase.rpc('save_transaction_split', {
+      p_transaction_id: transaction.id,
+    });
+
+    if (splitError) {
+      setStatus('error');
+      setErrorMessage(`Bill saved, but the split couldn't be calculated: ${splitError.message}`);
+      return;
     }
 
     router.push('/bills');
@@ -127,6 +190,7 @@ export default function AddBillForm({ categories, householdId, userId }) {
           <label className="block text-sm text-ink/70 mb-1">Period start</label>
           <input
             type="date"
+            required
             value={form.period_start}
             onChange={update('period_start')}
             className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
@@ -136,12 +200,43 @@ export default function AddBillForm({ categories, householdId, userId }) {
           <label className="block text-sm text-ink/70 mb-1">Period end</label>
           <input
             type="date"
+            required
             value={form.period_end}
             onChange={update('period_end')}
             className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
           />
         </div>
       </div>
+
+      {previewStatus !== 'idle' && (
+        <div className="border border-line rounded-xl p-4 bg-white">
+          <p className="text-sm font-medium text-ink mb-2">Split preview</p>
+          {previewStatus === 'loading' && <p className="text-sm text-ink/60">Calculating…</p>}
+          {previewStatus === 'error' && <p className="text-sm text-red-700">{previewError}</p>}
+          {previewStatus === 'ready' && preview.length === 0 && (
+            <p className="text-sm text-ink/60">
+              Nobody was an active member during this period — nothing to split.
+            </p>
+          )}
+          {previewStatus === 'ready' && preview.length > 0 && (
+            <ul className="space-y-1">
+              {preview.map((row) => (
+                <li key={row.member_id} className="flex items-center justify-between text-sm">
+                  <span className="text-ink/80">{memberName(row.member_id)}</span>
+                  <span className="text-ink font-medium">
+                    {formatAmount(row.share_amount)} ({row.share_percentage}%)
+                  </span>
+                </li>
+              ))}
+              {preview.reduce((sum, r) => sum + Number(r.share_amount), 0) < Number(form.amount) - 0.005 && (
+                <li className="text-xs text-amber pt-1">
+                  Splits don't add up to the full amount — a member may be missing a ratio for this category.
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="block text-sm text-ink/70 mb-1">Due date</label>

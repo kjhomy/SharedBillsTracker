@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
 import NavHeader from '../nav-header';
+import DeleteBillButton from './delete-bill-button';
+import MarkPaidControl from './mark-paid-control';
 
 function formatAmount(amount) {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
@@ -27,9 +29,14 @@ export default async function BillsPage() {
     redirect('/');
   }
 
+  const { data: members } = await supabase
+    .from('household_members')
+    .select('id, name')
+    .eq('household_id', household.household_id);
+
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('id, amount, payee, period_start, period_end, due_date, paid_status, created_at, categories(name), attachments(id, file_url)')
+    .select('id, amount, payee, period_start, period_end, due_date, paid_status, created_at, categories(name), attachments(id, file_url), paid_by:paid_by_member_id(name)')
     .eq('household_id', household.household_id)
     .order('created_at', { ascending: false });
 
@@ -45,7 +52,7 @@ export default async function BillsPage() {
         receiptUrl = signed?.signedUrl ?? null;
       }
 
-      return { ...t, receiptUrl };
+      return { ...t, receiptUrl, attachmentPath: attachment?.file_url ?? null };
     })
   );
 
@@ -90,20 +97,35 @@ export default async function BillsPage() {
                     {formatAmount(bill.amount)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${bill.paid_status === 'paid' ? 'bg-line text-ink/70' : 'bg-amber/20 text-amber'}`}>
-                    {bill.paid_status}
-                  </span>
-                  {bill.receiptUrl && (
-                    <a
-                      href={bill.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-ink/70 underline"
-                    >
-                      Receipt
-                    </a>
-                  )}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${bill.paid_status === 'paid' ? 'bg-line text-ink/70' : 'bg-amber/20 text-amber'}`}>
+                      {bill.paid_status}
+                    </span>
+                    {bill.receiptUrl && (
+                      <a
+                        href={bill.receiptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-ink/70 underline"
+                      >
+                        Receipt
+                      </a>
+                    )}
+                  </div>
+                  <MarkPaidControl
+                    billId={bill.id}
+                    paidStatus={bill.paid_status}
+                    paidByName={bill.paid_by?.name}
+                    members={members ?? []}
+                  />
+                </div>
+                <div className="flex items-center justify-end mt-2">
+                  <DeleteBillButton
+                    id={bill.id}
+                    label={bill.categories?.name ?? bill.payee}
+                    attachmentPath={bill.attachmentPath}
+                  />
                 </div>
               </li>
             ))}
