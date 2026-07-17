@@ -44,6 +44,7 @@ export default async function HomePage() {
     { data: balances },
     { data: netBalances },
     { data: unpaidBills },
+    { data: activity },
   ] = await Promise.all([
     supabase.from('household_members').select('id, name').eq('household_id', household.household_id),
     supabase.from('categories').select('id, name'),
@@ -55,6 +56,7 @@ export default async function HomePage() {
       .eq('household_id', household.household_id)
       .eq('paid_status', 'unpaid')
       .order('due_date'),
+    supabase.rpc('settlement_activity', { p_household_id: household.household_id }),
   ]);
 
   const memberName = (id) => members?.find((m) => m.id === id)?.name ?? 'Unknown';
@@ -84,6 +86,15 @@ export default async function HomePage() {
     }
     owedToCreditors.get(key).amount += Number(bill.amount);
   }
+
+  const activityLines = (activity ?? []).slice(0, 10).map((a) => {
+    const fromName = memberName(a.from_member_id);
+    const toName = memberName(a.to_member_id);
+    const text = Number(a.category_count) === 1
+      ? `${fromName} settled ${a.category_name ?? 'Uncategorised'} with ${toName} — ${formatAmount(a.amount)}`
+      : `${fromName} settled up with ${toName} — ${formatAmount(a.amount)} across ${a.category_count} categories`;
+    return { id: a.settlement_id, text, date: a.date };
+  });
 
   return (
     <div className="min-h-screen">
@@ -183,9 +194,20 @@ export default async function HomePage() {
           )}
 
           <h2 className="text-sm font-medium text-ink/70 mb-2">Recent activity</h2>
-          <div className="border border-line rounded-xl p-4 bg-white mb-6">
-            <p className="text-sm text-ink/70">Nothing yet — this fills in once settlements exist.</p>
-          </div>
+          {activityLines.length === 0 ? (
+            <div className="border border-line rounded-xl p-4 bg-white mb-6">
+              <p className="text-sm text-ink/70">Nothing yet — this fills in once settlements exist.</p>
+            </div>
+          ) : (
+            <ul className="space-y-2 mb-6">
+              {activityLines.map((line) => (
+                <li key={line.id} className="border border-line rounded-xl p-4 bg-white">
+                  <p className="text-sm text-ink">{line.text}</p>
+                  <p className="text-xs text-ink/60 mt-0.5">{formatDate(line.date)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="flex items-center gap-3 mb-4">
             <Link
