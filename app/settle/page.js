@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
@@ -14,7 +15,8 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default async function SettlePage() {
+export default async function SettlePage({ searchParams }) {
+  const { debtor, creditor } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -90,6 +92,14 @@ export default async function SettlePage() {
     };
   });
 
+  const isFiltered = Boolean(debtor && creditor);
+  const visiblePairs = isFiltered
+    ? pairsData.filter((p) => p.debtorId === debtor && p.creditorId === creditor)
+    : pairsData;
+  const filteredNames = isFiltered
+    ? { debtor: memberName(debtor), creditor: memberName(creditor), verb: debtor === household.id ? 'owe' : 'owes' }
+    : null;
+
   return (
     <div className="page-shell">
       <NavHeader />
@@ -101,13 +111,26 @@ export default async function SettlePage() {
             marked "paid" by someone show up here — that's what creates a debt to settle.
           </p>
 
-          {pairsData.length === 0 ? (
+          {isFiltered && (
+            <div className="mb-6 flex items-center justify-between rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3">
+              <p className="text-sm text-ink">
+                Showing what {filteredNames.debtor} {filteredNames.verb} {filteredNames.creditor}.
+              </p>
+              <Link href="/settle" className="btn-ghost">
+                Clear filter
+              </Link>
+            </div>
+          )}
+
+          {visiblePairs.length === 0 ? (
             <div className="card">
-              <p className="text-sm text-ink/70">Nothing to settle right now.</p>
+              <p className="text-sm text-ink/70">
+                {isFiltered ? 'Nothing outstanding between them right now.' : 'Nothing to settle right now.'}
+              </p>
             </div>
           ) : (
             <ul className="grid gap-4 lg:grid-cols-2">
-              {pairsData.map((pair) => (
+              {visiblePairs.map((pair) => (
                 <SettleForm
                   key={`${pair.debtorId}|${pair.creditorId}`}
                   householdId={household.household_id}

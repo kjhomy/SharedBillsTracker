@@ -191,11 +191,16 @@ export default async function HomePage() {
               ) : (
                 <ul className="space-y-2 mb-8">
                   {suggestions.map((s, i) => (
-                    <li key={i} className="card flex items-center gap-3">
-                      <Avatar name={memberName(s.from_member_id)} />
-                      <p className="text-sm font-medium text-ink">
-                        {memberName(s.from_member_id)} {owesVerb(s.from_member_id)} {memberName(s.to_member_id)} {formatAmount(s.amount)}
-                      </p>
+                    <li key={i}>
+                      <Link
+                        href={`/settle?debtor=${s.from_member_id}&creditor=${s.to_member_id}`}
+                        className="card-interactive flex items-center gap-3"
+                      >
+                        <Avatar name={memberName(s.from_member_id)} />
+                        <p className="text-sm font-medium text-ink">
+                          {memberName(s.from_member_id)} {owesVerb(s.from_member_id)} {memberName(s.to_member_id)} {formatAmount(s.amount)}
+                        </p>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -209,11 +214,16 @@ export default async function HomePage() {
                       const [debtorId, creditorId] = key.split('|');
                       return (
                         <li key={key} className="card">
-                          <div className="mb-3 flex items-center gap-2">
-                            <Avatar name={memberName(debtorId)} size="sm" />
-                            <p className="text-sm font-medium text-ink">
-                              {memberName(debtorId)} {owesVerb(debtorId)} {memberName(creditorId)}
-                            </p>
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Avatar name={memberName(debtorId)} size="sm" />
+                              <p className="text-sm font-medium text-ink">
+                                {memberName(debtorId)} {owesVerb(debtorId)} {memberName(creditorId)}
+                              </p>
+                            </div>
+                            <Link href={`/settle?debtor=${debtorId}&creditor=${creditorId}`} className="btn-ghost">
+                              Settle
+                            </Link>
                           </div>
                           <ul className="space-y-1.5">
                             {rows.map((r) => (
