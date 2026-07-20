@@ -16,7 +16,8 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default async function BillsPage() {
+export default async function BillsPage({ searchParams }) {
+  const { filter } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -62,6 +63,8 @@ export default async function BillsPage() {
     })
   );
 
+  const visibleBills = filter === 'missing_receipt' ? bills.filter((b) => missingAttachmentIds.has(b.id)) : bills;
+
   return (
     <div className="page-shell">
       <NavHeader />
@@ -77,13 +80,24 @@ export default async function BillsPage() {
             Manage recurring bills
           </Link>
 
-          {bills.length === 0 ? (
+          {filter === 'missing_receipt' && (
+            <div className="mb-6 flex items-center justify-between rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3">
+              <p className="text-sm text-ink">Showing paid bills with no receipt attached.</p>
+              <Link href="/bills" className="btn-ghost">
+                Clear filter
+              </Link>
+            </div>
+          )}
+
+          {visibleBills.length === 0 ? (
             <div className="card">
-              <p className="text-sm text-ink/70">No bills logged yet.</p>
+              <p className="text-sm text-ink/70">
+                {filter === 'missing_receipt' ? 'No paid bills are missing a receipt.' : 'No bills logged yet.'}
+              </p>
             </div>
           ) : (
             <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {bills.map((bill) => {
+              {visibleBills.map((bill) => {
                 const style = categoryStyle(bill.categories?.name);
                 return (
                   <li key={bill.id} className="card-interactive flex flex-col">

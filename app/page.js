@@ -116,7 +116,7 @@ export default async function HomePage() {
     flagCounts.missing_attachment > 0 && {
       key: 'missing_attachment',
       text: `${flagCounts.missing_attachment} bill${flagCounts.missing_attachment === 1 ? '' : 's'} missing a receipt`,
-      href: '/bills',
+      href: '/bills?filter=missing_receipt',
     },
   ].filter(Boolean);
 
