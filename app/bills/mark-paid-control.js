@@ -9,10 +9,6 @@ export default function MarkPaidControl({ billId, paidStatus, paidByName, member
   const [status, setStatus] = useState('idle'); // idle | saving | error
   const [errorMessage, setErrorMessage] = useState('');
 
-  if (paidStatus === 'paid') {
-    return <span className="text-xs text-ink/60">Paid by {paidByName ?? 'unknown'}</span>;
-  }
-
   async function handleSelect(e) {
     const memberId = e.target.value;
     if (!memberId) return;
@@ -33,6 +29,43 @@ export default function MarkPaidControl({ billId, paidStatus, paidByName, member
     }
 
     router.refresh();
+  }
+
+  async function handleUndo() {
+    if (!confirm("Mark this bill as unpaid? This undoes who paid it — you'll need to mark it paid again if that was wrong.")) {
+      return;
+    }
+
+    setStatus('saving');
+    setErrorMessage('');
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc('mark_transaction_unpaid', { p_transaction_id: billId });
+
+    if (error) {
+      setStatus('error');
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.refresh();
+  }
+
+  if (paidStatus === 'paid') {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-ink/60">Paid by {paidByName ?? 'unknown'}</span>
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={status === 'saving'}
+          className="btn-ghost disabled:opacity-60"
+        >
+          {status === 'saving' ? 'Undoing…' : 'Undo'}
+        </button>
+        {status === 'error' && <p className="text-xs text-red-700">{errorMessage}</p>}
+      </div>
+    );
   }
 
   return (
