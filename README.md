@@ -1,97 +1,142 @@
-# Household Bills Tracker — Setup
+# Household Bills Tracker
 
-This gets you to: **signed-in with a magic link, deployed on Vercel, nothing else built yet.**
-Everything below is either something 🧑‍💻 **you do**, or something ✅ **already done** for you.
+A shared-bills tracker for a household: log bills, split them fairly by
+per-category ratios that can change over time, track who's paid whom, and
+see the full financial picture — trends, benchmarks, and a running
+statement — in one place.
 
----
+Built with Next.js (App Router) + Supabase (Postgres, Auth, Storage) +
+Tailwind, deployed on Vercel as an installable PWA. See `roadmap.md` for
+the full build history, what's done, and what's next.
 
-## 1. Supabase — create the project and database
+## What's in the app
 
-🧑‍💻 **You do this:**
-1. Go to [supabase.com](https://supabase.com), sign up, click **New Project**.
-2. Pick a name, a database password (save it somewhere — you likely won't need it again but it's good practice), and a region close to you (London/EU).
-3. Once it's created, go to **SQL Editor** → **New query**.
-4. Open `supabase-schema.sql` from this project, copy the whole file, paste it in, click **Run**.
-   This creates every table from the spec (households, members, bills, splits, settlements, ratios) plus the security rules that keep one household's data invisible to another.
-5. Go to **Authentication → Providers**, confirm **Email** is enabled (it is by default). We're using magic links, so no password setup needed.
-6. Go to **Project Settings → API**. You'll need two values from here in step 3 below: **Project URL** and **anon public key**.
+- **Bills** — log one-off bills with a receipt photo, or set up recurring
+  templates (rent, subscriptions) that generate themselves monthly. Photo
+  receipts can auto-fill amount/payee/date via OCR (Claude via the Vercel
+  AI Gateway).
+- **Fair splitting** — a date-slicing algorithm applies whatever ratio was
+  actually in effect for each part of a bill's period, so a mid-period
+  ratio change or membership change splits correctly without manual
+  re-entry.
+- **Dashboard** — what's owed to external creditors, what's owed between
+  household members (with quick links into a pre-scoped Settle Up), and
+  what needs attention (missing ratios, unlogged recurring bills, bills
+  missing a receipt).
+- **Settle Up** — pick specific categories or bulk-settle everything
+  between two members, with optional proof-of-payment attachment.
+- **Ledger** — every bill and every settlement in one chronological,
+  month-grouped statement.
+- **Analytics** — spend trends by category with spike callouts, a running
+  balance-over-time chart, and a spend-vs-UK-average comparison.
+- **Household** — manage members' joined/left dates and category ratios;
+  each member has a profile page with their balance, ratios, and recent
+  activity. New members join via a self-serve invite link (no manual SQL).
+- **PWA** — installable, with an offline-viewing service worker for the
+  dashboard and bill list.
 
----
+## Setup
 
-## 2. Get the code onto your machine
+### 1. Supabase project
 
-🧑‍💻 **You do this:**
-1. Create a new empty repository on GitHub (no README, no .gitignore — we already have one).
-2. On your machine, in a terminal:
-   ```bash
-   cd path/to/where/you/keep/projects
-   git clone <your-empty-repo-url> household-bills-tracker
-   cd household-bills-tracker
+1. Create a project at [supabase.com](https://supabase.com) (pick a region
+   close to you).
+2. **Authentication → Providers** — confirm **Email** is enabled (magic
+   links, no password required to start).
+3. **Authentication → URL Configuration** — set **Site URL** to your
+   deployed app's URL (or `http://localhost:3000` while only running
+   locally), and add it to the **Redirect URLs** allow list along with any
+   other origins you'll sign in from (e.g. `https://your-app.vercel.app/**`,
+   `http://localhost:3000/**`). If this is misconfigured, magic links
+   silently redirect to whatever Site URL is set instead of where the app
+   actually asked — this has bitten this project before.
+4. **SQL Editor → New query** — run each file below in this order (each
+   file's own header comment explains what it does and what it depends
+   on):
+
    ```
-3. Copy every file from this project into that folder (I'll hand you the files as a zip — unzip it into the cloned folder).
-4. Install dependencies:
-   ```bash
-   npm install
+   supabase-schema.sql
+   supabase-storage.sql
+   supabase-recurring.sql
+   supabase-splits.sql
+   supabase-delete-bills.sql
+   supabase-balances.sql
+   supabase-settlements.sql
+   supabase-balances-fix.sql
+   supabase-ratio-integrity.sql
+   supabase-activity.sql
+   supabase-flags.sql
+   supabase-invites.sql
+   supabase-ledger.sql
+   supabase-split-durability-fix.sql
+   supabase-analytics.sql
+   supabase-mark-unpaid.sql
    ```
 
----
+   (`scripts/run-sql.mjs <file>` applies a file via the Supabase
+   Management API instead, if you'd rather not paste into the SQL Editor —
+   it needs `SUPABASE_ACCESS_TOKEN` set, see below.)
 
-## 3. Connect the app to Supabase
+5. **Project Settings → API** — note the **Project URL** and **anon
+   public** key for the next step.
 
-🧑‍💻 **You do this:**
-1. In the project folder, copy `.env.local.example` to a new file called `.env.local`.
-2. Paste in the two values from Supabase step 1.6:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-   ```
-3. Run it locally:
-   ```bash
-   npm run dev
-   ```
-4. Open `http://localhost:3000` — you should be redirected to `/login`. Enter your email, check your inbox, click the link. You should land on a page that says "You're in 🎉".
+### 2. Environment variables
 
-If that works, auth is fully wired up end to end.
+Copy `.env.local.example` to `.env.local` and fill in:
 
----
+| Variable | Required | Where it's used |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | The app (client + server) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | The app (client + server) |
+| `AI_GATEWAY_API_KEY` | Only for OCR receipt extraction, locally | `app/api/extract-receipt` — not needed in production on Vercel, which authenticates to the Gateway via OIDC automatically |
+| `SUPABASE_ACCESS_TOKEN` | Only for maintenance scripts | `scripts/run-sql.mjs` (Supabase Management API token, from your Supabase account settings) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Only for maintenance scripts | `scripts/delete-storage-object.mjs`, and anything else needing to bypass RLS directly (Project Settings → API) |
 
-## 4. Create your household (one-time, manual)
+### 3. Install and run
 
-Self-invite links come in a later phase — for now, create your household directly in Supabase.
+```bash
+npm install
+npm run dev
+```
 
-🧑‍💻 **You do this:**
-1. In Supabase, go to **Authentication → Users** and note your own user ID (you'll see it after you've signed in once via the app).
-2. Go to **SQL Editor** and run (replace the placeholders):
-   ```sql
-   insert into households (name) values ('Our Household') returning id;
-   -- copy the returned id, then:
-   insert into household_members (household_id, user_id, name, joined_date)
-   values ('<household-id-from-above>', '<your-user-id>', 'You', current_date);
-   insert into household_members (household_id, name, joined_date)
-   values ('<household-id-from-above>', 'Kofi', current_date);
-   -- Kofi's user_id stays null until he signs in himself later —
-   -- he can still be tracked in bills/splits without an account.
-   ```
+Open `http://localhost:3000` — you'll be redirected to `/login`. Sign in
+with a magic link (or switch to password sign-up).
 
----
+### 4. Create your household
 
-## 5. Deploy to Vercel
+There's still one manual step for the very first member and household —
+after that, every other member joins via the in-app invite flow, not SQL.
 
-🧑‍💻 **You do this:**
-1. Push your code to GitHub:
-   ```bash
-   git add .
-   git commit -m "Initial scaffold: auth working"
-   git push
-   ```
-2. Go to [vercel.com](https://vercel.com), sign up with GitHub, click **Add New → Project**, pick your repo.
-3. Before deploying, add the same two environment variables from step 3 (Vercel will prompt you — **Environment Variables** section).
-4. Click **Deploy**. You'll get a live URL like `household-bills-tracker.vercel.app`.
-5. From now on, every `git push` auto-deploys.
+In Supabase's SQL Editor:
 
----
+```sql
+insert into households (name) values ('Our Household') returning id;
+-- copy the returned id, then, using the user id from Authentication → Users
+-- for the account you just signed in with:
+insert into household_members (household_id, user_id, name, joined_date)
+values ('<household-id-from-above>', '<your-user-id>', 'You', current_date);
+```
+
+Then, from `/household` in the app: **+ Add a member** to create an
+unlinked placeholder for each additional household member, and **Generate
+invite link** to send them a join link — no further SQL required.
+
+### 5. Deploy to Vercel
+
+1. Push to GitHub, then **Add New → Project** on [vercel.com](https://vercel.com),
+   pointing at the repo.
+2. Add the environment variables from step 2 that apply in production
+   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` at minimum).
+3. Deploy. Go back to Supabase's **Authentication → URL Configuration**
+   and make sure the deployed URL is in the Site URL / redirect allow list
+   (step 1.3 above) — easy to miss, and the app will otherwise look broken
+   only for magic links, not for anything else.
+4. For OCR receipt extraction, make sure your Vercel team has a payment
+   method on file under **AI Gateway** — the Gateway blocks all requests
+   without one, independent of any usage budget you've set.
+
+From here, every `git push` to `main` auto-deploys.
 
 ## What's next
 
-This gets you: real auth, a real database with the full schema, and a deployed (but mostly empty) app.
-Next step is building the **Add Bill** form and **Dashboard** against these real tables — that's a separate follow-up, since it depends on you completing steps 1–5 first.
+See `roadmap.md` for the full history and current status.
