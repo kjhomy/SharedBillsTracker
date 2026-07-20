@@ -4,6 +4,7 @@ import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
 import NavHeader from '../../nav-header';
 import DeleteRecurringButton from './delete-recurring-button';
+import MarkPaidControl from '../mark-paid-control';
 import { categoryStyle } from '@/lib/style';
 
 function formatDate(date) {
@@ -45,6 +46,26 @@ export default async function RecurringBillsPage() {
     .eq('household_id', household.household_id)
     .order('due_day_of_month');
 
+  const { data: members } = await supabase
+    .from('household_members')
+    .select('id, name')
+    .eq('household_id', household.household_id);
+
+  const now = new Date();
+  // Build the date string from local y/m/d directly — toISOString() converts
+  // to UTC first, which rolls back a day for any timezone ahead of UTC
+  // (e.g. BST) right at local midnight.
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const { data: currentTransactions } = await supabase
+    .from('transactions')
+    .select('id, recurring_bill_id, paid_status, paid_by:paid_by_member_id(name)')
+    .eq('household_id', household.household_id)
+    .eq('period_start', monthStart)
+    .not('recurring_bill_id', 'is', null);
+
+  const currentTxByRecurringId = new Map((currentTransactions ?? []).map((t) => [t.recurring_bill_id, t]));
+
   const { data: flags } = await supabase.rpc('household_flags', { p_household_id: household.household_id });
   const unloggedIds = new Set(
     (flags ?? []).filter((f) => f.flag_type === 'unlogged_recurring').map((f) => f.recurring_bill_id)
@@ -73,6 +94,7 @@ export default async function RecurringBillsPage() {
             <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {recurringBills.map((bill) => {
                 const style = categoryStyle(bill.categories?.name);
+                const currentTx = currentTxByRecurringId.get(bill.id);
                 return (
                   <li key={bill.id} className="card-interactive flex flex-col">
                     <div className="flex items-start justify-between gap-3">
@@ -103,6 +125,17 @@ export default async function RecurringBillsPage() {
                         {formatAmount(bill.amount)}
                       </p>
                     </div>
+                    {currentTx && (
+                      <div className="mt-3 pt-3 border-t border-line/70">
+                        <p className="text-xs text-ink/50 mb-1.5">This month</p>
+                        <MarkPaidControl
+                          billId={currentTx.id}
+                          paidStatus={currentTx.paid_status}
+                          paidByName={currentTx.paid_by?.name}
+                          members={members ?? []}
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-line/70">
                       {!bill.active ? (
                         <span className="pill bg-line text-ink/70">paused</span>
