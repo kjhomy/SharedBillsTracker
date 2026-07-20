@@ -31,7 +31,7 @@ export default function DeleteRecurringButton({ id, label }) {
       type="button"
       onClick={handleDelete}
       disabled={status === 'deleting'}
-      className="text-xs text-red-700 underline disabled:opacity-60"
+      className="text-xs font-medium text-red-700/80 underline decoration-red-700/30 underline-offset-2 transition hover:text-red-700 disabled:opacity-60"
     >
       {status === 'deleting' ? 'Deleting…' : 'Delete'}
     </button>

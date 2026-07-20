@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import InviteMemberButton from './invite-member-button';
+import Avatar from '../avatar';
 
 function MemberRow({ member, householdId }) {
   const router = useRouter();
@@ -55,22 +56,25 @@ function MemberRow({ member, householdId }) {
   }
 
   return (
-    <li className="border border-line rounded-xl p-4 bg-white space-y-3">
+    <li className="card space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-ink">{member.name}</p>
-        {!member.user_id && <span className="text-xs text-amber">No login yet</span>}
+        <div className="flex items-center gap-3">
+          <Avatar name={member.name} />
+          <p className="text-sm font-medium text-ink">{member.name}</p>
+        </div>
+        {!member.user_id && <span className="pill bg-amber/15 text-amber">No login yet</span>}
       </div>
 
       {!member.user_id && <InviteMemberButton member={member} householdId={householdId} />}
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Joined</label>
+        <label className="field-label">Joined</label>
         <input
           type="date"
           required
           value={joinedDate}
           onChange={(e) => setJoinedDate(e.target.value)}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
@@ -88,13 +92,13 @@ function MemberRow({ member, householdId }) {
 
       {hasLeft && (
         <div>
-          <label className="block text-sm text-ink/70 mb-1">Left</label>
+          <label className="field-label">Left</label>
           <input
             type="date"
             required
             value={leftDate}
             onChange={(e) => setLeftDate(e.target.value)}
-            className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+            className="input-field"
           />
         </div>
       )}
@@ -103,7 +107,7 @@ function MemberRow({ member, householdId }) {
         type="button"
         onClick={handleSave}
         disabled={!dirty || status === 'saving'}
-        className="w-full bg-ink text-paper rounded-lg py-2.5 text-sm font-medium disabled:opacity-40"
+        className="btn-primary w-full"
       >
         {status === 'saving' ? 'Saving…' : 'Save'}
       </button>
@@ -116,7 +120,7 @@ function MemberRow({ member, householdId }) {
 export default function EditMembersForm({ members, householdId }) {
   if (members.length === 0) {
     return (
-      <div className="border border-line rounded-xl p-4 bg-white">
+      <div className="card">
         <p className="text-sm text-ink/70">No members found.</p>
       </div>
     );

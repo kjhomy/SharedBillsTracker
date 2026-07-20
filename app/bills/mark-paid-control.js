@@ -41,7 +41,7 @@ export default function MarkPaidControl({ billId, paidStatus, paidByName, member
         defaultValue=""
         onChange={handleSelect}
         disabled={status === 'saving'}
-        className="text-xs border border-line rounded-lg px-2 py-1 bg-white text-ink/70"
+        className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-white text-ink/70 transition hover:border-ink/30 focus:outline-none focus:ring-2 focus:ring-ink/10"
       >
         <option value="" disabled>Mark as paid by…</option>
         {members.map((m) => (

@@ -4,6 +4,8 @@ import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
 import SetPasswordForm from './set-password-form';
 import NavHeader from './nav-header';
+import Avatar from './avatar';
+import { categoryStyle } from '@/lib/style';
 import { simplifyDebts } from '@/lib/debtSimplification';
 
 function formatAmount(amount) {
@@ -27,9 +29,9 @@ export default async function HomePage() {
 
   if (!household) {
     return (
-      <div className="min-h-screen">
+      <div className="page-shell">
         <NavHeader />
-        <div className="px-6 py-10">
+        <div className="page-container">
           <p className="text-sm text-ink/70">
             Signed in as {user.email}, but no household is set up for this account yet.
           </p>
@@ -119,139 +121,170 @@ export default async function HomePage() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <NavHeader />
-      <div className="px-6 py-10">
-        <div className="max-w-md mx-auto">
-          <h1 className="font-display text-2xl font-semibold text-ink mb-1">Dashboard</h1>
-          <p className="text-sm text-ink/60 mb-6">Signed in as {user.email}</p>
+      <div className="page-container">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <h1 className="font-display text-3xl font-semibold text-ink mb-1">Dashboard</h1>
+              <p className="text-sm text-ink/60">Signed in as {user.email}</p>
+            </div>
+            <Link href="/bills/new" className="btn-primary hidden sm:inline-flex">
+              Add bill
+            </Link>
+          </div>
 
           {attentionItems.length > 0 && (
-            <>
+            <div className="mb-8">
               <h2 className="text-sm font-medium text-amber mb-2">Needs attention</h2>
-              <ul className="space-y-2 mb-6">
+              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {attentionItems.map((item) => (
-                  <li key={item.key} className="border border-amber/40 bg-amber/10 rounded-xl p-4">
-                    <Link href={item.href} className="text-sm text-ink underline">
+                  <li key={item.key} className="rounded-2xl border border-amber/30 bg-amber/10 p-4">
+                    <Link href={item.href} className="text-sm text-ink underline decoration-amber/50 underline-offset-2 hover:decoration-amber">
                       {item.text}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </>
+            </div>
           )}
 
-          <h2 className="text-sm font-medium text-ink/70 mb-2">Owed to creditors</h2>
+          <h2 className="text-sm font-medium text-ink/70 mb-3">Owed to creditors</h2>
           {owedToCreditors.size === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white mb-6">
+            <div className="card mb-8">
               <p className="text-sm text-ink/70">Nothing outstanding.</p>
             </div>
           ) : (
-            <ul className="space-y-2 mb-6">
-              {[...owedToCreditors.values()].map((row) => (
-                <li key={`${row.categoryName}|${row.payee}`} className="border border-line rounded-xl p-4 bg-white flex items-center justify-between">
-                  <p className="text-sm font-medium text-ink">
-                    {row.categoryName} — {row.payee}
-                  </p>
-                  <p className="text-sm font-semibold text-ink">{formatAmount(row.amount)}</p>
-                </li>
-              ))}
+            <ul className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+              {[...owedToCreditors.values()].map((row) => {
+                const style = categoryStyle(row.categoryName);
+                return (
+                  <li key={`${row.categoryName}|${row.payee}`} className={`flex min-h-[128px] flex-col justify-between rounded-3xl p-4 sm:p-5 ${style.bg}`}>
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/50 text-lg">
+                      {style.emoji}
+                    </span>
+                    <div className="mt-4">
+                      <p className={`text-lg font-semibold ${style.text}`}>{formatAmount(row.amount)}</p>
+                      <p className="mt-0.5 truncate text-xs text-ink/60">{row.categoryName} · {row.payee}</p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-medium text-ink/70">Between household members</h2>
-            {suggestions.length > 0 && (
-              <Link href="/settle" className="text-xs text-ink/60 underline">
-                Settle up
-              </Link>
-            )}
-          </div>
-          {suggestions.length === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white mb-6">
-              <p className="text-sm text-ink/70">Nobody owes anybody — no payments recorded yet.</p>
-            </div>
-          ) : (
-            <ul className="space-y-2 mb-6">
-              {suggestions.map((s, i) => (
-                <li key={i} className="border border-line rounded-xl p-4 bg-white">
-                  <p className="text-sm font-medium text-ink">
-                    {memberName(s.from_member_id)} {owesVerb(s.from_member_id)} {memberName(s.to_member_id)} {formatAmount(s.amount)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {grouped.size > 0 && (
-            <>
-              <h2 className="text-sm font-medium text-ink/70 mb-2">Between members, by category</h2>
-              <ul className="space-y-3 mb-6">
-                {[...grouped.entries()].map(([key, rows]) => {
-                  const [debtorId, creditorId] = key.split('|');
-                  return (
-                    <li key={key} className="border border-line rounded-xl p-4 bg-white">
-                      <p className="text-sm font-medium text-ink mb-2">
-                        {memberName(debtorId)} {owesVerb(debtorId)} {memberName(creditorId)}
+          <div className="lg:grid lg:grid-cols-2 lg:gap-8">
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-ink/70">Between household members</h2>
+                {suggestions.length > 0 && (
+                  <Link href="/settle" className="btn-ghost">
+                    Settle up
+                  </Link>
+                )}
+              </div>
+              {suggestions.length === 0 ? (
+                <div className="card mb-8">
+                  <p className="text-sm text-ink/70">Nobody owes anybody — no payments recorded yet.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2 mb-8">
+                  {suggestions.map((s, i) => (
+                    <li key={i} className="card flex items-center gap-3">
+                      <Avatar name={memberName(s.from_member_id)} />
+                      <p className="text-sm font-medium text-ink">
+                        {memberName(s.from_member_id)} {owesVerb(s.from_member_id)} {memberName(s.to_member_id)} {formatAmount(s.amount)}
                       </p>
-                      <ul className="space-y-1">
-                        {rows.map((r) => (
-                          <li key={r.category_id} className="flex items-center justify-between text-sm">
-                            <span className="text-ink/70">{categoryName(r.category_id)}</span>
-                            <span className="text-ink">{formatAmount(r.amount)}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
+                  ))}
+                </ul>
+              )}
 
-          <h2 className="text-sm font-medium text-ink/70 mb-2">Unpaid bills (detail)</h2>
-          {(unpaidBills ?? []).length === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white mb-6">
-              <p className="text-sm text-ink/70">Nothing outstanding.</p>
+              {grouped.size > 0 && (
+                <>
+                  <h2 className="text-sm font-medium text-ink/70 mb-2">Between members, by category</h2>
+                  <ul className="space-y-3 mb-8">
+                    {[...grouped.entries()].map(([key, rows]) => {
+                      const [debtorId, creditorId] = key.split('|');
+                      return (
+                        <li key={key} className="card">
+                          <div className="mb-3 flex items-center gap-2">
+                            <Avatar name={memberName(debtorId)} size="sm" />
+                            <p className="text-sm font-medium text-ink">
+                              {memberName(debtorId)} {owesVerb(debtorId)} {memberName(creditorId)}
+                            </p>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {rows.map((r) => (
+                              <li key={r.category_id} className="flex items-center justify-between text-sm">
+                                <span className="text-ink/70">{categoryName(r.category_id)}</span>
+                                <span className="text-ink font-medium">{formatAmount(r.amount)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </div>
-          ) : (
-            <ul className="space-y-2 mb-6">
-              {unpaidBills.map((bill) => (
-                <li key={bill.id} className="border border-line rounded-xl p-4 bg-white flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-ink">
-                      {bill.categories?.name ?? 'Uncategorised'}{bill.payee ? ` — ${bill.payee}` : ''}
-                    </p>
-                    {bill.due_date && <p className="text-xs text-ink/60">Due {formatDate(bill.due_date)}</p>}
-                  </div>
-                  <p className="text-sm font-semibold text-ink">{formatAmount(bill.amount)}</p>
-                </li>
-              ))}
-            </ul>
-          )}
 
-          <h2 className="text-sm font-medium text-ink/70 mb-2">Recent activity</h2>
-          {activityLines.length === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white mb-6">
-              <p className="text-sm text-ink/70">Nothing yet — this fills in once settlements exist.</p>
+            <div>
+              <h2 className="text-sm font-medium text-ink/70 mb-2">Unpaid bills (detail)</h2>
+              {(unpaidBills ?? []).length === 0 ? (
+                <div className="card mb-8">
+                  <p className="text-sm text-ink/70">Nothing outstanding.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2 mb-8">
+                  {unpaidBills.map((bill) => {
+                    const style = categoryStyle(bill.categories?.name);
+                    return (
+                      <li key={bill.id} className="card flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm ${style.bg}`}>
+                            {style.emoji}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-ink truncate">
+                              {bill.categories?.name ?? 'Uncategorised'}{bill.payee ? ` — ${bill.payee}` : ''}
+                            </p>
+                            {bill.due_date && <p className="text-xs text-ink/60">Due {formatDate(bill.due_date)}</p>}
+                          </div>
+                        </div>
+                        <p className="text-sm font-semibold text-ink whitespace-nowrap">{formatAmount(bill.amount)}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <h2 className="text-sm font-medium text-ink/70 mb-2">Recent activity</h2>
+              {activityLines.length === 0 ? (
+                <div className="card mb-8">
+                  <p className="text-sm text-ink/70">Nothing yet — this fills in once settlements exist.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2 mb-8">
+                  {activityLines.map((line) => (
+                    <li key={line.id} className="card">
+                      <p className="text-sm text-ink">{line.text}</p>
+                      <p className="text-xs text-ink/60 mt-0.5">{formatDate(line.date)}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-          ) : (
-            <ul className="space-y-2 mb-6">
-              {activityLines.map((line) => (
-                <li key={line.id} className="border border-line rounded-xl p-4 bg-white">
-                  <p className="text-sm text-ink">{line.text}</p>
-                  <p className="text-xs text-ink/60 mt-0.5">{formatDate(line.date)}</p>
-                </li>
-              ))}
-            </ul>
-          )}
+          </div>
 
           <div className="flex items-center gap-3 mb-4">
-            <Link
-              href="/bills"
-              className="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
-            >
+            <Link href="/bills" className="btn-secondary">
               View bills
+            </Link>
+            <Link href="/bills/new" className="btn-primary sm:hidden">
+              Add bill
             </Link>
           </div>
           <SetPasswordForm />

@@ -68,12 +68,12 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Category</label>
+        <label className="field-label">Category</label>
         <select
           required
           value={form.category_id}
           onChange={update('category_id')}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         >
           <option value="" disabled>Select a category</option>
           {categories.map((c) => (
@@ -83,18 +83,18 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Payee</label>
+        <label className="field-label">Payee</label>
         <input
           type="text"
           value={form.payee}
           onChange={update('payee')}
           placeholder="e.g. Landlord"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Amount (£)</label>
+        <label className="field-label">Amount (£)</label>
         <input
           type="number"
           step="0.01"
@@ -103,12 +103,12 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
           value={form.amount}
           onChange={update('amount')}
           placeholder="0.00"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Due day of month</label>
+        <label className="field-label">Due day of month</label>
         <input
           type="number"
           min="1"
@@ -117,7 +117,7 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
           value={form.due_day_of_month}
           onChange={update('due_day_of_month')}
           placeholder="e.g. 25"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
         <p className="text-xs text-ink/60 mt-1">
           Falls on the last day of the month for months shorter than this.
@@ -125,13 +125,13 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Start date</label>
+        <label className="field-label">Start date</label>
         <input
           type="date"
           required
           value={form.start_date}
           onChange={update('start_date')}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
@@ -146,13 +146,13 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
 
       {!perpetual && (
         <div>
-          <label className="block text-sm text-ink/70 mb-1">End date</label>
+          <label className="field-label">End date</label>
           <input
             type="date"
             required
             value={form.end_date}
             onChange={update('end_date')}
-            className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+            className="input-field"
           />
         </div>
       )}
@@ -160,7 +160,7 @@ export default function AddRecurringForm({ categories, householdId, userId }) {
       <button
         type="submit"
         disabled={status === 'saving'}
-        className="w-full bg-ink text-paper rounded-lg py-3 text-sm font-medium disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {status === 'saving' ? 'Saving…' : 'Save recurring bill'}
       </button>

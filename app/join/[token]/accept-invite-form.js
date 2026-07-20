@@ -53,19 +53,11 @@ export default function AcceptInviteForm({ token }) {
   }
 
   if (status === 'sent') {
-    return (
-      <div className="border border-line rounded-xl p-4 bg-white">
-        <p className="text-sm text-ink">Check your inbox for a sign-in link.</p>
-      </div>
-    );
+    return <p className="text-sm text-ink">Check your inbox for a sign-in link.</p>;
   }
 
   if (status === 'signup-sent') {
-    return (
-      <div className="border border-line rounded-xl p-4 bg-white">
-        <p className="text-sm text-ink">Check your inbox to confirm your account — that'll finish joining.</p>
-      </div>
-    );
+    return <p className="text-sm text-ink">Check your inbox to confirm your account — that'll finish joining.</p>;
   }
 
   return (
@@ -77,7 +69,7 @@ export default function AcceptInviteForm({ token }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
 
         {mode === 'password' && (
@@ -88,15 +80,11 @@ export default function AcceptInviteForm({ token }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+            className="input-field"
           />
         )}
 
-        <button
-          type="submit"
-          disabled={status === 'sending'}
-          className="w-full bg-ink text-paper rounded-lg py-3 text-sm font-medium disabled:opacity-60"
-        >
+        <button type="submit" disabled={status === 'sending'} className="btn-primary w-full">
           {status === 'sending'
             ? 'Sending…'
             : mode === 'magic' ? 'Send magic link' : 'Create account'}
@@ -110,7 +98,7 @@ export default function AcceptInviteForm({ token }) {
       <button
         type="button"
         onClick={() => switchMode(mode === 'magic' ? 'password' : 'magic')}
-        className="w-full text-center text-xs text-ink/60 underline mt-4"
+        className="btn-ghost w-full text-center mt-4"
       >
         {mode === 'magic' ? 'Use a password instead' : 'Use a magic link instead'}
       </button>

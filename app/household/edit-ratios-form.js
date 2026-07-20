@@ -163,16 +163,16 @@ function CategoryRatioCard({ category, members, currentRatios, missingRatioMembe
   }
 
   return (
-    <li className="border border-line rounded-xl p-4 bg-white space-y-3">
+    <li className="card space-y-3">
       <p className="text-sm font-medium text-ink">{category.name}</p>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Effective from</label>
+        <label className="field-label">Effective from</label>
         <input
           type="date"
           value={effectiveFrom}
           onChange={(e) => setEffectiveFrom(e.target.value)}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
@@ -180,7 +180,7 @@ function CategoryRatioCard({ category, members, currentRatios, missingRatioMembe
         const existing = currentRatios.find((r) => r.member_id === m.id);
         return (
           <div key={m.id}>
-            <label className="block text-sm text-ink/70 mb-1">{m.name} (%)</label>
+            <label className="field-label">{m.name} (%)</label>
             <input
               type="number"
               step="0.01"
@@ -189,7 +189,7 @@ function CategoryRatioCard({ category, members, currentRatios, missingRatioMembe
               value={values[m.id]}
               onChange={(e) => handlePercentageChange(m.id, e.target.value)}
               placeholder="0"
-              className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+              className="input-field"
             />
             {existing && (
               <p className="text-xs text-ink/50 mt-1">
@@ -211,7 +211,7 @@ function CategoryRatioCard({ category, members, currentRatios, missingRatioMembe
         type="button"
         onClick={handleSave}
         disabled={!dirty || status === 'saving'}
-        className="w-full bg-ink text-paper rounded-lg py-2.5 text-sm font-medium disabled:opacity-40"
+        className="btn-primary w-full"
       >
         {status === 'saving' ? 'Saving…' : 'Save'}
       </button>
@@ -224,7 +224,7 @@ function CategoryRatioCard({ category, members, currentRatios, missingRatioMembe
 export default function EditRatiosForm({ categories, members, currentRatios, missingRatioFlags, householdId }) {
   if (categories.length === 0) {
     return (
-      <div className="border border-line rounded-xl p-4 bg-white">
+      <div className="card">
         <p className="text-sm text-ink/70">No categories found.</p>
       </div>
     );

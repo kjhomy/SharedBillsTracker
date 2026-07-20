@@ -82,7 +82,7 @@ export default function SettleForm({ householdId, currentMemberId, pair }) {
   }
 
   return (
-    <li className="border border-line rounded-xl p-4 bg-white space-y-3">
+    <li className="card space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-ink">
           {pair.debtorName} {pair.debtorId === currentMemberId ? 'owe' : 'owes'} {pair.creditorName}
@@ -128,7 +128,7 @@ export default function SettleForm({ householdId, currentMemberId, pair }) {
         type="button"
         onClick={handleSettle}
         disabled={selectedSplitIds.length === 0 || status === 'saving'}
-        className="w-full bg-ink text-paper rounded-lg py-2.5 text-sm font-medium disabled:opacity-40"
+        className="btn-primary w-full"
       >
         {status === 'saving' ? 'Settling…' : 'Settle selected'}
       </button>

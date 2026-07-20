@@ -47,7 +47,7 @@ export default function InviteMemberButton({ member, householdId }) {
           type="button"
           onClick={handleGenerate}
           disabled={status === 'generating'}
-          className="text-xs text-ink/60 underline disabled:opacity-60"
+          className="btn-ghost disabled:opacity-60"
         >
           {status === 'generating' ? 'Generating link…' : 'Generate invite link'}
         </button>
@@ -64,13 +64,9 @@ export default function InviteMemberButton({ member, householdId }) {
           readOnly
           value={link}
           onFocus={(e) => e.target.select()}
-          className="flex-1 border border-line rounded-lg px-2 py-1.5 text-xs bg-paper"
+          className="flex-1 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-xs"
         />
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="text-xs text-ink underline whitespace-nowrap"
-        >
+        <button type="button" onClick={handleCopy} className="btn-ghost whitespace-nowrap">
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>

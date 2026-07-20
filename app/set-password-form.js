@@ -29,11 +29,7 @@ export default function SetPasswordForm() {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-xs text-ink/60 underline"
-      >
+      <button type="button" onClick={() => setOpen(true)} className="btn-ghost">
         Set a password
       </button>
     );
@@ -48,13 +44,9 @@ export default function SetPasswordForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="New password"
-        className="w-full border border-line rounded-lg px-3 py-2 text-sm bg-white"
+        className="input-field"
       />
-      <button
-        type="submit"
-        disabled={status === 'saving'}
-        className="border border-line rounded-lg px-3 py-1.5 text-sm text-ink disabled:opacity-60"
-      >
+      <button type="submit" disabled={status === 'saving'} className="btn-secondary">
         {status === 'saving' ? 'Saving…' : 'Save password'}
       </button>
       {status === 'done' && <p className="text-xs text-ink/70">Password set — you can sign in with it next time.</p>}

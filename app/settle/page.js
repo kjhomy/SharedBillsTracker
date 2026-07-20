@@ -3,6 +3,7 @@ import { getHousehold } from '@/lib/household';
 import { redirect } from 'next/navigation';
 import NavHeader from '../nav-header';
 import SettleForm from './settle-form';
+import Avatar from '../avatar';
 
 function formatAmount(amount) {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
@@ -90,22 +91,22 @@ export default async function SettlePage() {
   });
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <NavHeader />
-      <div className="px-6 py-10">
-        <div className="max-w-md mx-auto">
-          <h1 className="font-display text-2xl font-semibold text-ink mb-1">Settle up</h1>
-          <p className="text-sm text-ink/60 mb-6">
+      <div className="page-container">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="font-display text-3xl font-semibold text-ink mb-1">Settle up</h1>
+          <p className="text-sm text-ink/60 mb-8">
             Pick categories to settle in full, or select everything for a bulk payment. Only bills
             marked "paid" by someone show up here — that's what creates a debt to settle.
           </p>
 
           {pairsData.length === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white">
+            <div className="card">
               <p className="text-sm text-ink/70">Nothing to settle right now.</p>
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="grid gap-4 lg:grid-cols-2">
               {pairsData.map((pair) => (
                 <SettleForm
                   key={`${pair.debtorId}|${pair.creditorId}`}
@@ -117,20 +118,26 @@ export default async function SettlePage() {
             </ul>
           )}
 
-          <h2 className="text-sm font-medium text-ink/70 mt-8 mb-2">Recent settlements</h2>
+          <h2 className="text-sm font-medium text-ink/70 mt-10 mb-3">Recent settlements</h2>
           {recentSettlements.length === 0 ? (
-            <div className="border border-line rounded-xl p-4 bg-white">
+            <div className="card">
               <p className="text-sm text-ink/70">No settlements recorded yet.</p>
             </div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {recentSettlements.map((s) => (
-                <li key={s.id} className="border border-line rounded-xl p-3 bg-white flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-ink">
-                      {memberName(s.from_member_id)} → {memberName(s.to_member_id)}
-                    </p>
-                    <p className="text-xs text-ink/60">{formatDate(s.date)}</p>
+                <li key={s.id} className="card flex items-center justify-between gap-3 !p-3.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex -space-x-2">
+                      <Avatar name={memberName(s.from_member_id)} size="sm" className="ring-2 ring-white" />
+                      <Avatar name={memberName(s.to_member_id)} size="sm" className="ring-2 ring-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink truncate">
+                        {memberName(s.from_member_id)} → {memberName(s.to_member_id)}
+                      </p>
+                      <p className="text-xs text-ink/60">{formatDate(s.date)}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-ink whitespace-nowrap">{formatAmount(s.amount)}</span>
@@ -139,7 +146,7 @@ export default async function SettlePage() {
                         href={s.receiptUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-ink/70 underline"
+                        className="btn-ghost"
                       >
                         Proof
                       </a>

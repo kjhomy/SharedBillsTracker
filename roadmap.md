@@ -90,11 +90,11 @@ Goal: the app answers "who owes who, and for what" at a glance.
 
 Goal: the app tells you when something needs attention instead of silently guessing.
 
-- [ ] Computed (not stored) flags: member with no ratio set for an active category, recurring bill not yet logged this period, bill missing an attachment
-- [ ] Surface flags consistently across Dashboard, Bill Detail, and Ratios screens (shared query, not duplicated logic)
-- [ ] General UI polish pass against the wireframe (spacing, empty states, loading states)
+- [x] Computed (not stored) flags: member with no ratio set for an active category, recurring bill not yet logged this period, bill missing an attachment — `household_flags()` RPC (`supabase-flags.sql`)
+- [x] Surface flags consistently across Dashboard, Bill Detail, and Ratios screens (shared query, not duplicated logic) — every screen calls the same `household_flags` RPC and filters client-side by `flag_type`
+- [x] General UI polish pass against the wireframe (spacing, empty states, loading states) — full responsive redesign, not just a polish pass. Built a shared design system (`tailwind.config.js` pastel accent palette + shadow tokens, `app/globals.css` `@layer components` for `.card`/`.btn-primary`/`.btn-secondary`/`.btn-ghost`/`.input-field`/`.pill`, `lib/style.js` for deterministic category color+emoji and member-initial avatars via `app/avatar.js`). Every page moved off the single `max-w-md` mobile-only column onto responsive breakpoints (card grids on Bills/Recurring, two-column layouts on Dashboard/Household/Settle). `NavHeader` rebuilt with inline nav links + active-route highlighting on desktop, hamburger retained for mobile. Verified by injecting a real Supabase session's SSR cookie (built via `@supabase/ssr`'s own `createServerClient`, not hand-guessed) into a headless-Chromium session and screenshotting every authenticated page at mobile/tablet/desktop widths against live household data — confirmed layouts, colors, and data all render correctly, no console errors.
 
-**Definition of done:** nothing is silently wrong — if a split is 0% because a ratio's missing, you see it before it causes a dispute.
+**Definition of done:** nothing is silently wrong — if a split is 0% because a ratio's missing, you see it before it causes a dispute. ✅ All three items done — Phase 4 complete.
 
 ---
 

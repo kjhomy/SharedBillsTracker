@@ -75,8 +75,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
+        <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-peach-bg text-2xl">
+          🏠
+        </span>
         <h1 className="font-display text-2xl font-semibold text-ink mb-1">Household Bills</h1>
         <p className="text-ink/70 text-sm mb-6">
           {mode === 'magic'
@@ -84,68 +87,62 @@ export default function LoginPage() {
             : 'Sign in with your email and password.'}
         </p>
 
-        {status === 'sent' ? (
-          <div className="border border-line rounded-xl p-4 bg-white">
+        <div className="card">
+          {status === 'sent' ? (
             <p className="text-sm text-ink">Check your inbox for a sign-in link.</p>
-          </div>
-        ) : status === 'signup-sent' ? (
-          <div className="border border-line rounded-xl p-4 bg-white">
+          ) : status === 'signup-sent' ? (
             <p className="text-sm text-ink">Check your inbox to confirm your account, then sign in.</p>
-          </div>
-        ) : (
-          <form onSubmit={mode === 'magic' ? handleMagicLink : handlePasswordSignIn} className="space-y-3">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
-            />
-
-            {mode === 'password' && (
+          ) : (
+            <form onSubmit={mode === 'magic' ? handleMagicLink : handlePasswordSignIn} className="space-y-3">
               <input
-                type="password"
+                type="email"
                 required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="input-field"
               />
-            )}
 
-            <button
-              type="submit"
-              disabled={status === 'sending'}
-              className="w-full bg-ink text-paper rounded-lg py-3 text-sm font-medium disabled:opacity-60"
-            >
-              {status === 'sending'
-                ? 'Sending…'
-                : mode === 'magic' ? 'Send magic link' : 'Sign in'}
-            </button>
+              {mode === 'password' && (
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="input-field"
+                />
+              )}
 
-            {mode === 'password' && (
-              <button
-                type="button"
-                onClick={handleSignUp}
-                disabled={status === 'sending'}
-                className="w-full border border-line rounded-lg py-2.5 text-sm text-ink disabled:opacity-60"
-              >
-                Create account
+              <button type="submit" disabled={status === 'sending'} className="btn-primary w-full">
+                {status === 'sending'
+                  ? 'Sending…'
+                  : mode === 'magic' ? 'Send magic link' : 'Sign in'}
               </button>
-            )}
 
-            {status === 'error' && (
-              <p className="text-sm text-red-700">{errorMessage || 'Something went wrong. Try again.'}</p>
-            )}
-          </form>
-        )}
+              {mode === 'password' && (
+                <button
+                  type="button"
+                  onClick={handleSignUp}
+                  disabled={status === 'sending'}
+                  className="btn-secondary w-full"
+                >
+                  Create account
+                </button>
+              )}
+
+              {status === 'error' && (
+                <p className="text-sm text-red-700">{errorMessage || 'Something went wrong. Try again.'}</p>
+              )}
+            </form>
+          )}
+        </div>
 
         <button
           type="button"
           onClick={() => switchMode(mode === 'magic' ? 'password' : 'magic')}
-          className="w-full text-center text-xs text-ink/60 underline mt-4"
+          className="btn-ghost w-full text-center mt-4"
         >
           {mode === 'magic' ? 'Use a password instead' : 'Use a magic link instead'}
         </button>

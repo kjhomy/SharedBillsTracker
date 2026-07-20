@@ -43,32 +43,43 @@ export default async function HouseholdPage() {
   const missingRatioFlags = (flags ?? []).filter((f) => f.flag_type === 'missing_ratio');
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <NavHeader />
-      <div className="px-6 py-10">
-        <div className="max-w-md mx-auto">
-          <h1 className="font-display text-2xl font-semibold text-ink mb-2">Household members</h1>
-          <p className="text-sm text-ink/60 mb-6">
-            Joined/left dates control who a bill's split applies to. Changing a date recalculates
-            every bill's split automatically.
+      <div className="page-container">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="font-display text-3xl font-semibold text-ink mb-1">Household</h1>
+          <p className="text-sm text-ink/60 mb-8">
+            Who's in the household, when, and what share of each bill category they cover.
           </p>
-          <EditMembersForm members={members ?? []} householdId={household.household_id} />
-          <div className="mt-3">
-            <AddMemberForm householdId={household.household_id} />
-          </div>
 
-          <h2 className="font-display text-xl font-semibold text-ink mt-10 mb-2">Category ratios</h2>
-          <p className="text-sm text-ink/60 mb-6">
-            Who pays what share of each category. Changing a ratio keeps the old one on record
-            (so past bills still use what was in effect then) and recalculates every bill's split.
-          </p>
-          <EditRatiosForm
-            categories={categories ?? []}
-            members={members ?? []}
-            currentRatios={currentRatios ?? []}
-            missingRatioFlags={missingRatioFlags}
-            householdId={household.household_id}
-          />
+          <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
+            <div>
+              <h2 className="font-display text-xl font-semibold text-ink mb-1">Members</h2>
+              <p className="text-sm text-ink/60 mb-4">
+                Joined/left dates control who a bill's split applies to — changing one recalculates
+                every bill's split automatically.
+              </p>
+              <EditMembersForm members={members ?? []} householdId={household.household_id} />
+              <div className="mt-4">
+                <AddMemberForm householdId={household.household_id} />
+              </div>
+            </div>
+
+            <div className="mt-10 lg:mt-0">
+              <h2 className="font-display text-xl font-semibold text-ink mb-1">Category ratios</h2>
+              <p className="text-sm text-ink/60 mb-4">
+                Who pays what share of each category. Changing a ratio keeps the old one on record
+                (so past bills still use what was in effect then) and recalculates every bill's split.
+              </p>
+              <EditRatiosForm
+                categories={categories ?? []}
+                members={members ?? []}
+                currentRatios={currentRatios ?? []}
+                missingRatioFlags={missingRatioFlags}
+                householdId={household.household_id}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

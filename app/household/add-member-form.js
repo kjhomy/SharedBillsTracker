@@ -36,23 +36,23 @@ export default function AddMemberForm({ householdId }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-xs text-ink/60 underline">
-        Add a member
+      <button type="button" onClick={() => setOpen(true)} className="btn-ghost">
+        + Add a member
       </button>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-line rounded-xl p-4 bg-white space-y-3">
+    <form onSubmit={handleSubmit} className="card space-y-3">
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Name</label>
+        <label className="field-label">Name</label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Kofi"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
         <p className="text-xs text-ink/60 mt-1">
           Creates a member with no login yet — generate an invite link for them next.
@@ -60,18 +60,10 @@ export default function AddMemberForm({ householdId }) {
       </div>
 
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={status === 'saving'}
-          className="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
-        >
+        <button type="submit" disabled={status === 'saving'} className="btn-primary">
           {status === 'saving' ? 'Adding…' : 'Add member'}
         </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-sm text-ink/60 underline"
-        >
+        <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
           Cancel
         </button>
       </div>

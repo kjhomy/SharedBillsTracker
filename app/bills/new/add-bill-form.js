@@ -146,12 +146,12 @@ export default function AddBillForm({ categories, members, householdId, userId }
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Category</label>
+        <label className="field-label">Category</label>
         <select
           required
           value={form.category_id}
           onChange={update('category_id')}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         >
           <option value="" disabled>Select a category</option>
           {categories.map((c) => (
@@ -161,18 +161,18 @@ export default function AddBillForm({ categories, members, householdId, userId }
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Payee</label>
+        <label className="field-label">Payee</label>
         <input
           type="text"
           value={form.payee}
           onChange={update('payee')}
           placeholder="e.g. British Gas"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Amount (£)</label>
+        <label className="field-label">Amount (£)</label>
         <input
           type="number"
           step="0.01"
@@ -181,35 +181,35 @@ export default function AddBillForm({ categories, members, householdId, userId }
           value={form.amount}
           onChange={update('amount')}
           placeholder="0.00"
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm text-ink/70 mb-1">Period start</label>
+          <label className="field-label">Period start</label>
           <input
             type="date"
             required
             value={form.period_start}
             onChange={update('period_start')}
-            className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+            className="input-field"
           />
         </div>
         <div>
-          <label className="block text-sm text-ink/70 mb-1">Period end</label>
+          <label className="field-label">Period end</label>
           <input
             type="date"
             required
             value={form.period_end}
             onChange={update('period_end')}
-            className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+            className="input-field"
           />
         </div>
       </div>
 
       {previewStatus !== 'idle' && (
-        <div className="border border-line rounded-xl p-4 bg-white">
+        <div className="rounded-xl bg-paper p-4">
           <p className="text-sm font-medium text-ink mb-2">Split preview</p>
           {previewStatus === 'loading' && <p className="text-sm text-ink/60">Calculating…</p>}
           {previewStatus === 'error' && <p className="text-sm text-red-700">{previewError}</p>}
@@ -239,27 +239,27 @@ export default function AddBillForm({ categories, members, householdId, userId }
       )}
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Due date</label>
+        <label className="field-label">Due date</label>
         <input
           type="date"
           value={form.due_date}
           onChange={update('due_date')}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Notes</label>
+        <label className="field-label">Notes</label>
         <textarea
           value={form.notes}
           onChange={update('notes')}
           rows={2}
-          className="w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-ink/70 mb-1">Receipt (optional)</label>
+        <label className="field-label">Receipt (optional)</label>
         <input
           type="file"
           accept="image/*,application/pdf"
@@ -271,7 +271,7 @@ export default function AddBillForm({ categories, members, householdId, userId }
       <button
         type="submit"
         disabled={status === 'saving'}
-        className="w-full bg-ink text-paper rounded-lg py-3 text-sm font-medium disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {status === 'saving' ? 'Saving…' : 'Save bill'}
       </button>

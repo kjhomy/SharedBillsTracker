@@ -6,3 +6,43 @@ body {
   background: #F5F4EF;
   color: #16303A;
 }
+
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl border border-line/70 shadow-card p-4 sm:p-5;
+  }
+  .card-interactive {
+    @apply card transition hover:shadow-card-hover hover:border-ink/15;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5
+      text-sm font-medium text-paper transition hover:bg-ink/90 active:scale-[0.98]
+      disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line
+      bg-white px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-paper
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-ghost {
+    @apply text-xs font-medium text-ink/60 underline decoration-ink/30 underline-offset-2
+      transition hover:text-ink;
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink
+      placeholder:text-ink/35 transition focus:border-ink/40 focus:outline-none
+      focus:ring-2 focus:ring-ink/10;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink/70;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .page-shell {
+    @apply min-h-screen;
+  }
+  .page-container {
+    @apply px-4 py-8 sm:px-6 sm:py-10 lg:px-8;
+  }
+}
