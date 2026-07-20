@@ -5,6 +5,7 @@ import NavHeader from '../nav-header';
 import EditMembersForm from './edit-members-form';
 import EditRatiosForm from './edit-ratios-form';
 import AddMemberForm from './add-member-form';
+import EditCategoriesForm from './edit-categories-form';
 
 export default async function HouseholdPage() {
   const supabase = await createClient();
@@ -26,12 +27,14 @@ export default async function HouseholdPage() {
     .eq('household_id', household.household_id)
     .order('joined_date');
 
-  const { data: categories } = await supabase
+  const { data: allCategories } = await supabase
     .from('categories')
-    .select('id, name')
+    .select('id, name, archived_at')
     .or(`user_id.is.null,user_id.eq.${user.id}`)
     .eq('type', 'expense')
     .order('name');
+
+  const activeCategories = (allCategories ?? []).filter((c) => !c.archived_at);
 
   const { data: currentRatios } = await supabase
     .from('category_ratios')
@@ -66,13 +69,20 @@ export default async function HouseholdPage() {
             </div>
 
             <div className="mt-10 lg:mt-0">
-              <h2 className="font-display text-xl font-semibold text-ink mb-1">Category ratios</h2>
+              <h2 className="font-display text-xl font-semibold text-ink mb-1">Categories</h2>
+              <p className="text-sm text-ink/60 mb-4">
+                Archived categories drop out of new bills and ratios but stay attached to their
+                history. A category can only be deleted outright once nothing references it.
+              </p>
+              <EditCategoriesForm categories={allCategories ?? []} />
+
+              <h2 className="font-display text-xl font-semibold text-ink mt-10 mb-1">Category ratios</h2>
               <p className="text-sm text-ink/60 mb-4">
                 Who pays what share of each category. Changing a ratio keeps the old one on record
                 (so past bills still use what was in effect then) and recalculates every bill's split.
               </p>
               <EditRatiosForm
-                categories={categories ?? []}
+                categories={activeCategories}
                 members={members ?? []}
                 currentRatios={currentRatios ?? []}
                 missingRatioFlags={missingRatioFlags}

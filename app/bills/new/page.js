@@ -23,6 +23,7 @@ export default async function NewBillPage() {
     .select('id, name')
     .or(`user_id.is.null,user_id.eq.${user.id}`)
     .eq('type', 'expense')
+    .is('archived_at', null)
     .order('name');
 
   const { data: members } = await supabase
