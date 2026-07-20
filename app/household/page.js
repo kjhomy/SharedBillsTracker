@@ -38,6 +38,9 @@ export default async function HouseholdPage() {
     .eq('household_id', household.household_id)
     .is('effective_to', null);
 
+  const { data: flags } = await supabase.rpc('household_flags', { p_household_id: household.household_id });
+  const missingRatioFlags = (flags ?? []).filter((f) => f.flag_type === 'missing_ratio');
+
   return (
     <div className="min-h-screen">
       <NavHeader />
@@ -59,6 +62,7 @@ export default async function HouseholdPage() {
             categories={categories ?? []}
             members={members ?? []}
             currentRatios={currentRatios ?? []}
+            missingRatioFlags={missingRatioFlags}
             householdId={household.household_id}
           />
         </div>

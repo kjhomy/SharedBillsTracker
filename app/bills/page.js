@@ -40,6 +40,11 @@ export default async function BillsPage() {
     .eq('household_id', household.household_id)
     .order('created_at', { ascending: false });
 
+  const { data: flags } = await supabase.rpc('household_flags', { p_household_id: household.household_id });
+  const missingAttachmentIds = new Set(
+    (flags ?? []).filter((f) => f.flag_type === 'missing_attachment').map((f) => f.transaction_id)
+  );
+
   const bills = await Promise.all(
     (transactions ?? []).map(async (t) => {
       const attachment = t.attachments?.[0];
@@ -111,6 +116,9 @@ export default async function BillsPage() {
                       >
                         Receipt
                       </a>
+                    )}
+                    {missingAttachmentIds.has(bill.id) && (
+                      <span className="text-xs text-amber">No receipt</span>
                     )}
                   </div>
                   <MarkPaidControl

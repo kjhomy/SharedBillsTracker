@@ -44,6 +44,11 @@ export default async function RecurringBillsPage() {
     .eq('household_id', household.household_id)
     .order('due_day_of_month');
 
+  const { data: flags } = await supabase.rpc('household_flags', { p_household_id: household.household_id });
+  const unloggedIds = new Set(
+    (flags ?? []).filter((f) => f.flag_type === 'unlogged_recurring').map((f) => f.recurring_bill_id)
+  );
+
   return (
     <div className="min-h-screen">
       <NavHeader />
@@ -84,6 +89,9 @@ export default async function RecurringBillsPage() {
                       <p className="text-xs text-ink/60">
                         Next: {formatDate(nextDueDate(bill.due_day_of_month))}
                       </p>
+                    )}
+                    {unloggedIds.has(bill.id) && (
+                      <p className="text-xs text-amber mt-0.5">Not yet logged this month</p>
                     )}
                   </div>
                   <p className="text-sm font-semibold text-ink whitespace-nowrap">

@@ -14,7 +14,7 @@ function dayBefore(dateStr) {
   return d.toISOString().slice(0, 10);
 }
 
-function CategoryRatioCard({ category, members, currentRatios, householdId }) {
+function CategoryRatioCard({ category, members, currentRatios, missingRatioMemberIds, householdId }) {
   const router = useRouter();
   // Default to an existing row's start date rather than today, so simply
   // opening an already-configured category and clicking Save (without
@@ -196,6 +196,9 @@ function CategoryRatioCard({ category, members, currentRatios, householdId }) {
                 Currently {existing.percentage}%, effective since {existing.effective_from}
               </p>
             )}
+            {!existing && (values[m.id] ?? '') === '' && missingRatioMemberIds.has(m.id) && (
+              <p className="text-xs text-amber mt-1">No ratio set — bills will split this member at 0%</p>
+            )}
           </div>
         );
       })}
@@ -218,7 +221,7 @@ function CategoryRatioCard({ category, members, currentRatios, householdId }) {
   );
 }
 
-export default function EditRatiosForm({ categories, members, currentRatios, householdId }) {
+export default function EditRatiosForm({ categories, members, currentRatios, missingRatioFlags, householdId }) {
   if (categories.length === 0) {
     return (
       <div className="border border-line rounded-xl p-4 bg-white">
@@ -235,6 +238,11 @@ export default function EditRatiosForm({ categories, members, currentRatios, hou
           category={category}
           members={members}
           currentRatios={currentRatios.filter((r) => r.category_id === category.id)}
+          missingRatioMemberIds={new Set(
+            (missingRatioFlags ?? [])
+              .filter((f) => f.category_id === category.id)
+              .map((f) => f.member_id)
+          )}
           householdId={householdId}
         />
       ))}

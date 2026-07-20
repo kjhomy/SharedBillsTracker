@@ -45,6 +45,7 @@ export default async function HomePage() {
     { data: netBalances },
     { data: unpaidBills },
     { data: activity },
+    { data: flags },
   ] = await Promise.all([
     supabase.from('household_members').select('id, name').eq('household_id', household.household_id),
     supabase.from('categories').select('id, name'),
@@ -57,6 +58,7 @@ export default async function HomePage() {
       .eq('paid_status', 'unpaid')
       .order('due_date'),
     supabase.rpc('settlement_activity', { p_household_id: household.household_id }),
+    supabase.rpc('household_flags', { p_household_id: household.household_id }),
   ]);
 
   const memberName = (id) => members?.find((m) => m.id === id)?.name ?? 'Unknown';
@@ -96,6 +98,26 @@ export default async function HomePage() {
     return { id: a.settlement_id, text, date: a.date };
   });
 
+  const flagCounts = { missing_ratio: 0, unlogged_recurring: 0, missing_attachment: 0 };
+  for (const f of flags ?? []) flagCounts[f.flag_type] = (flagCounts[f.flag_type] ?? 0) + 1;
+  const attentionItems = [
+    flagCounts.missing_ratio > 0 && {
+      key: 'missing_ratio',
+      text: `${flagCounts.missing_ratio} ratio gap${flagCounts.missing_ratio === 1 ? '' : 's'} — a bill could split incorrectly`,
+      href: '/household',
+    },
+    flagCounts.unlogged_recurring > 0 && {
+      key: 'unlogged_recurring',
+      text: `${flagCounts.unlogged_recurring} recurring bill${flagCounts.unlogged_recurring === 1 ? '' : 's'} not yet logged this month`,
+      href: '/bills/recurring',
+    },
+    flagCounts.missing_attachment > 0 && {
+      key: 'missing_attachment',
+      text: `${flagCounts.missing_attachment} bill${flagCounts.missing_attachment === 1 ? '' : 's'} missing a receipt`,
+      href: '/bills',
+    },
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen">
       <NavHeader />
@@ -103,6 +125,21 @@ export default async function HomePage() {
         <div className="max-w-md mx-auto">
           <h1 className="font-display text-2xl font-semibold text-ink mb-1">Dashboard</h1>
           <p className="text-sm text-ink/60 mb-6">Signed in as {user.email}</p>
+
+          {attentionItems.length > 0 && (
+            <>
+              <h2 className="text-sm font-medium text-amber mb-2">Needs attention</h2>
+              <ul className="space-y-2 mb-6">
+                {attentionItems.map((item) => (
+                  <li key={item.key} className="border border-amber/40 bg-amber/10 rounded-xl p-4">
+                    <Link href={item.href} className="text-sm text-ink underline">
+                      {item.text}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h2 className="text-sm font-medium text-ink/70 mb-2">Owed to creditors</h2>
           {owedToCreditors.size === 0 ? (
