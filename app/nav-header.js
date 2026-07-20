@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: '/bills/recurring', label: 'Recurring' },
   { href: '/household', label: 'Household' },
   { href: '/settle', label: 'Settle up' },
+  { href: '/ledger', label: 'Ledger' },
 ];
 
 export default function NavHeader() {

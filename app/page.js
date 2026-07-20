@@ -261,7 +261,12 @@ export default async function HomePage() {
                 </ul>
               )}
 
-              <h2 className="text-sm font-medium text-ink/70 mb-2">Recent activity</h2>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-ink/70">Recent activity</h2>
+                <Link href="/ledger" className="btn-ghost">
+                  Full ledger
+                </Link>
+              </div>
               {activityLines.length === 0 ? (
                 <div className="card mb-8">
                   <p className="text-sm text-ink/70">Nothing yet — this fills in once settlements exist.</p>

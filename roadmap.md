@@ -128,11 +128,23 @@ Goal: a new member can join without you manually touching Supabase.
 
 ---
 
+## Full ledger/statement view
+
+Goal: a bank-statement-style, transaction-by-transaction feed — every bill logged and every settlement made, chronologically — instead of only current-snapshot balances.
+
+- [x] `household_ledger()` RPC (`supabase-ledger.sql`, applied to the live project) — unions every `transaction` and every `settlement` into one feed (`entry_type` discriminator), each bill row carrying its per-member split breakdown as a `jsonb` array. Not `security definer`, same as `settlement_activity()`/`household_balances()` — relies on the underlying tables' own RLS, so a household_id the caller isn't a member of just yields nothing.
+- [x] New `/ledger` page — month-grouped chronological feed, bill entries (category icon, split-by-member line, paid status) and settlement entries (avatar pair, category text, mint-tinted card) visually distinct. Linked from the nav bar and from the Dashboard's "Recent activity" section.
+
+**Bug found and fixed while building this (unrelated to the ledger itself, but it directly corrupted the data the ledger surfaces):** `save_transaction_split()` recalculated a bill's split by deleting all its `transaction_splits` rows and reinserting fresh ones, every time `recompute_household_splits()` ran (which fires automatically on any joined/left-date or ratio edit). `settlement_allocations` references `transaction_splits` `ON DELETE CASCADE`, so any settlement that had already paid off a split silently lost its link and got cascade-deleted the moment a later edit regenerated that split row — even though the `settlements` record itself survived. `household_balances()`/`unsettled_splits()` then treated the (identical-looking, new-id) split as never having been paid, so an already-settled debt would quietly reappear as outstanding. This had already happened for real: two genuine settlements (£37.50 Energy, £1,000 Rent, both "You" paying Kofi back) had lost their allocation rows, and the Dashboard was overstating "You owe Kofi" by £1,037.50 as a result. Fixed via `supabase-split-durability-fix.sql` — `save_transaction_split()` now upserts by `(transaction_id, member_id)` (new unique constraint) instead of delete-and-reinsert, so a split's row identity survives a recompute when a member's share is merely recalculated rather than removed outright; only genuinely-dropped members (e.g. left before the bill's period) still cascade, which is correct there. Also repaired the two already-broken settlements by re-linking them to their current split rows (identified unambiguously: paid bill + matching amount + matching debtor/creditor pair). Verified: `net_balances()` now returns £0 for both members, and both settlements now show correctly in Recent Activity and the Ledger.
+
+**Definition of done:** you can see, for any point in time, exactly what was logged and what was paid, without the dashboard's current-balance math ever silently drifting from reality again. ✅ Done and verified against live data.
+
+---
+
 ## Later / not scheduled yet
 
 These were flagged during spec but deliberately deferred — revisit once the above is solid:
 
-- **Full ledger/statement view** (Option C) — upgrade from settlement-only balances to a full transaction-by-transaction statement feed
 - **OCR/auto-extract** from bill and receipt photos into pre-filled Add Bill fields
 - **Analytics** — spend spikes (e.g. energy usage jump), balance build-up trends between members, UK average benchmark comparison (needs new `BenchmarkRate` table)
 - **Personal finance fork** — reuse the Core layer (Transaction, Category, Attachment) standalone, without household tables, once the core app is proven
