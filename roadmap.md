@@ -155,9 +155,21 @@ Goal: a receipt photo pre-fills the Add Bill form instead of typing everything b
 
 ---
 
-## Later / not scheduled yet
+## Analytics
 
-These were flagged during spec but deliberately deferred — revisit once the above is solid:
+Goal: spend spikes, a balance build-up trend between members, and a UK-average benchmark comparison — turning the raw ledger data into charts instead of just lists.
 
-- **Analytics** — spend spikes (e.g. energy usage jump), balance build-up trends between members, UK average benchmark comparison (needs new `BenchmarkRate` table)
-- **Personal finance fork** — reuse the Core layer (Transaction, Category, Attachment) standalone, without household tables, once the core app is proven
+- [x] `supabase-analytics.sql` (applied to the live project): `benchmark_rates` table (illustrative placeholder UK averages for Energy/Water/Council Tax/Internet — explicitly not live data, with an in-app editor to correct them; Rent deliberately not seeded, varies too much by region/size to have one meaningful "UK average"), `category_spend_by_month()` RPC, `balance_trend()` RPC (raw signed events — paid bill splits `+`, settlements `-` — client canonicalizes into one running line for "what you owe the household," since that's simpler to get right in JS than in one aggregate query).
+- [x] Chart palette: the app's existing accent colors (used for category icon backgrounds) failed the dataviz skill's colorblind-safety validator when tried as chart series colors — too low chroma, they're background tints, not data-ink. Used the skill's separately-validated default 8-hue categorical palette instead (re-validated against this app's actual white card surface), kept as `lib/chartPalette.js`, with a fixed alphabetical-by-category slot assignment (never cycled) and an "Other" fold past 8 series.
+- [x] Two hand-rolled SVG chart components (no new charting library): `LineChart` (multi-series band mode for the spend trend, single-series time mode with zero-baseline + area wash for the balance trend — crosshair-driven tooltip, direct end-label, table-view toggle) and `BenchmarkChart` (horizontal diverging bar per category, blue = below benchmark / red = above, per-bar hover detail, direct value labels so nothing is hover-only).
+- [x] `/analytics` page — spend-spike callouts (≥25% month-over-month increase per category), the three chart sections, and an inline benchmark editor. Linked from the nav bar.
+
+**Verified in a real browser** against live household data (session-cookie injection + headless Chromium, same technique as the responsive redesign): confirmed the crosshair/tooltip interaction, the table-view accessibility toggle, and responsive layout at mobile and desktop widths, with no console errors. One real bug caught and fixed along the way: the server page was passing a function (`formatAmount`) as a prop into the `'use client'` chart component, which Next.js correctly rejects (functions can't cross the server/client boundary) — fixed by defining the formatter inside the client component instead.
+
+**Definition of done:** you can see spend spikes, whether the balance between you and Kofi is trending up or down, and whether you're paying more or less than a typical UK household per category. ✅ Done and verified.
+
+---
+
+## Out of scope
+
+- **Personal finance fork** (reusing the Core layer standalone, without household tables) — decided against; this app is staying household-focused.

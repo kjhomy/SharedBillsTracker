@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/household', label: 'Household' },
   { href: '/settle', label: 'Settle up' },
   { href: '/ledger', label: 'Ledger' },
+  { href: '/analytics', label: 'Analytics' },
 ];
 
 export default function NavHeader() {
