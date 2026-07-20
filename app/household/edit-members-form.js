@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import InviteMemberButton from './invite-member-button';
 import Avatar from '../avatar';
@@ -58,10 +59,10 @@ function MemberRow({ member, householdId }) {
   return (
     <li className="card space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link href={`/household/${member.id}`} className="flex items-center gap-3 group">
           <Avatar name={member.name} />
-          <p className="text-sm font-medium text-ink">{member.name}</p>
-        </div>
+          <p className="text-sm font-medium text-ink group-hover:underline">{member.name}</p>
+        </Link>
         {!member.user_id && <span className="pill bg-amber/15 text-amber">No login yet</span>}
       </div>
 
