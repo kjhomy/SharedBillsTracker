@@ -29,6 +29,10 @@ export default function AddBillForm({ categories, members, householdId, userId }
   const [previewStatus, setPreviewStatus] = useState('idle'); // idle | loading | error | ready
   const [previewError, setPreviewError] = useState('');
 
+  const [extraction, setExtraction] = useState(null); // { amount, payee, date } from the receipt, kept for the attachment row
+  const [extractStatus, setExtractStatus] = useState('idle'); // idle | loading | error | done
+  const [extractError, setExtractError] = useState('');
+
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
@@ -78,6 +82,39 @@ export default function AddBillForm({ categories, members, householdId, userId }
     return () => clearTimeout(timeout);
   }, [form.category_id, form.amount, form.period_start, form.period_end, householdId]);
 
+  async function handleExtract() {
+    if (!file) return;
+
+    setExtractStatus('loading');
+    setExtractError('');
+
+    const body = new FormData();
+    body.append('file', file);
+
+    try {
+      const res = await fetch('/api/extract-receipt', { method: 'POST', body });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setExtractStatus('error');
+        setExtractError(data.error ?? 'Something went wrong.');
+        return;
+      }
+
+      setExtraction(data);
+      setForm((f) => ({
+        ...f,
+        payee: f.payee || data.payee || '',
+        amount: f.amount || (data.amount != null ? String(data.amount) : ''),
+        due_date: f.due_date || data.date || '',
+      }));
+      setExtractStatus('done');
+    } catch {
+      setExtractStatus('error');
+      setExtractError('Something went wrong.');
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus('saving');
@@ -118,9 +155,13 @@ export default function AddBillForm({ categories, members, householdId, userId }
         return;
       }
 
-      const { error: attachmentError } = await supabase
-        .from('attachments')
-        .insert({ transaction_id: transaction.id, file_url: path });
+      const { error: attachmentError } = await supabase.from('attachments').insert({
+        transaction_id: transaction.id,
+        file_url: path,
+        extracted_amount: extraction?.amount ?? null,
+        extracted_date: extraction?.date ?? null,
+        extracted_payee: extraction?.payee ?? null,
+      });
 
       if (attachmentError) {
         setStatus('error');
@@ -263,9 +304,28 @@ export default function AddBillForm({ categories, members, householdId, userId }
         <input
           type="file"
           accept="image/*,application/pdf"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            setFile(e.target.files?.[0] ?? null);
+            setExtraction(null);
+            setExtractStatus('idle');
+            setExtractError('');
+          }}
           className="w-full text-sm"
         />
+        {file?.type?.startsWith('image/') && extractStatus !== 'done' && (
+          <button
+            type="button"
+            onClick={handleExtract}
+            disabled={extractStatus === 'loading'}
+            className="btn-ghost mt-2 disabled:opacity-60"
+          >
+            {extractStatus === 'loading' ? 'Reading receipt…' : '✨ Fill in details from this photo'}
+          </button>
+        )}
+        {extractStatus === 'done' && (
+          <p className="text-xs text-ink/60 mt-2">Filled in from the receipt — check the fields above before saving.</p>
+        )}
+        {extractStatus === 'error' && <p className="text-xs text-red-700 mt-2">{extractError}</p>}
       </div>
 
       <button

@@ -141,10 +141,23 @@ Goal: a bank-statement-style, transaction-by-transaction feed — every bill log
 
 ---
 
+## OCR/auto-extract from bill and receipt photos
+
+Goal: a receipt photo pre-fills the Add Bill form instead of typing everything by hand. The schema already had `extracted_amount`/`extracted_date`/`extracted_payee` columns on `attachments` sitting unused since Phase 1 — this is what they were for.
+
+- [x] `POST /api/extract-receipt` route — authenticated-only (rejects signed-out requests before spending anything), takes the image via `FormData`, calls `claude-haiku-4.5` through the Vercel AI Gateway (`generateText` with `Output.object()` and a Zod schema for `{ amount, payee, date }`, all nullable — the model is instructed to return null rather than guess). PDFs are rejected client- and server-side (extraction is images-only; PDFs still work as plain attachments, unchanged).
+- [x] Wired into `AddBillForm` (`app/bills/new/add-bill-form.js`) — an "✨ Fill in details from this photo" button appears once an image is selected, only fills fields that are still empty (never clobbers something the user already typed), and everything stays editable before saving. The raw extraction is persisted onto the `attachments` row's `extracted_*` columns on save, regardless of what the user ends up entering, giving an audit trail of what the model actually read vs. what was confirmed.
+- [x] Model access set up: installed the `ai` SDK, confirmed against its bundled docs (not memory) that this version's structured-output API is `generateText({ output: Output.object() })`, not the deprecated `generateObject`. Created a dedicated AI Gateway API key via `vercel ai-gateway api-keys create` (`$5/month` budget cap) for local testing, since the project had none configured; production deploys authenticate to the Gateway automatically via OIDC with no key needed.
+
+**Blocked on your end, not code:** live end-to-end testing (synthetic receipt image → real API call) hit `AI Gateway requires a valid credit card on file to service requests` — an account-level billing gate, separate from the budget cap, that only you can clear (`vercel.com` → your team → AI Gateway → add a card). The route correctly reached the Gateway and got a real structured error back, so the wiring itself is confirmed correct up to that point — the actual vision extraction quality is unverified until a card's on file.
+
+**Definition of done:** you can photograph a bill and have amount/payee/due-date show up pre-filled, review, and save. Code complete; needs a card on the Vercel account before it can run for real.
+
+---
+
 ## Later / not scheduled yet
 
 These were flagged during spec but deliberately deferred — revisit once the above is solid:
 
-- **OCR/auto-extract** from bill and receipt photos into pre-filled Add Bill fields
 - **Analytics** — spend spikes (e.g. energy usage jump), balance build-up trends between members, UK average benchmark comparison (needs new `BenchmarkRate` table)
 - **Personal finance fork** — reuse the Core layer (Transaction, Category, Attachment) standalone, without household tables, once the core app is proven
