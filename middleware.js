@@ -29,7 +29,8 @@ export async function middleware(request) {
 
   const isPublicPath =
     request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/auth');
+    request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname.startsWith('/join');
 
   if (!user && !isPublicPath) {
     const loginUrl = new URL('/login', request.url);

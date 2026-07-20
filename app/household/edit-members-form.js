@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import InviteMemberButton from './invite-member-button';
 
 function MemberRow({ member, householdId }) {
   const router = useRouter();
@@ -26,6 +27,10 @@ function MemberRow({ member, householdId }) {
       .update({
         joined_date: joinedDate,
         left_date: hasLeft ? leftDate : null,
+        // Leaving revokes login access via RLS (is_household_member requires
+        // auth_active = true) without deleting any historical data; rejoining
+        // (unchecking) restores it.
+        auth_active: !hasLeft,
       })
       .eq('id', member.id);
 
@@ -51,7 +56,12 @@ function MemberRow({ member, householdId }) {
 
   return (
     <li className="border border-line rounded-xl p-4 bg-white space-y-3">
-      <p className="text-sm font-medium text-ink">{member.name}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-ink">{member.name}</p>
+        {!member.user_id && <span className="text-xs text-amber">No login yet</span>}
+      </div>
+
+      {!member.user_id && <InviteMemberButton member={member} householdId={householdId} />}
 
       <div>
         <label className="block text-sm text-ink/70 mb-1">Joined</label>

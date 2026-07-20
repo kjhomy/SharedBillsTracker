@@ -116,11 +116,15 @@ Goal: installable, app-like, works offline for viewing.
 
 Goal: a new member can join without you manually touching Supabase.
 
-- [ ] Build invite link/code generation, tied to `household_id`
-- [ ] Build sign-up flow that links a new Supabase auth user to an existing (or new) `household_members` row
-- [ ] Build "remove member" flow: sets `left_date` + flips `auth_active` to false, revoking login without deleting historical data
+- [x] Build invite link/code generation, tied to `household_id` — `household_invites` table (`supabase-invites.sql`, applied to the live project): token, household_id, member_id, expiry (7 days), redeemed_at. RLS insert policy only allows creating an invite for a member row that's still unlinked (`user_id is null`), so an invite can never be used to hijack an already-active member. Added a name-only **add member** form (`app/household/add-member-form.js`) so a brand-new flatmate (not just Kofi's pre-existing placeholder) can get an unlinked row without manual SQL, plus a **generate invite link** action per unlinked member (`app/household/invite-member-button.js`) on `/household`.
+- [x] Build sign-up flow that links a new Supabase auth user to an existing (or new) `household_members` row — public `/join/[token]` landing page (excluded from the auth middleware) previews the invite via a `get_invite_preview` RPC (anon-callable, read-only), then reuses the existing magic-link/password sign-up UI with `emailRedirectTo` carrying the token through to `/auth/callback`. The callback route now calls `accept_invite(token)` — a `security definer` RPC, required because at the moment it runs the caller isn't a household member yet, so the normal RLS policies would otherwise block it — which links `auth.uid()` to the invite's member row and marks the invite redeemed. Race-safe: the link only succeeds if the member row's `user_id` is still null at update time, so an invite can only ever be claimed once.
+- [x] Build "remove member" flow: sets `left_date` + flips `auth_active` to false, revoking login without deleting historical data — wired into the existing "Has left the household" checkbox on `/household` (`edit-members-form.js`); saving now also sets `auth_active = !hasLeft`, and unchecking it (rejoining) restores access. No new UI needed, since the checkbox already existed for split-calculation purposes.
 
-**Definition of done:** Kofi (or a future flatmate) can join by clicking a link, no manual SQL required.
+**Verified:** local production build compiles cleanly with the new `/join/[token]` route; confirmed `/join/<bogus-token>` returns 200 (not redirected to `/login` — the middleware exclusion works) and correctly renders "Invite not valid"; confirmed a real invite renders the correct household/member name preview; confirmed `accept_invite` rejects unauthenticated calls (`not_authenticated` guard fires correctly). Test fixtures (throwaway member + invite row) created and cleaned up directly in Supabase — not left in the live household.
+
+**Still needs a live test (can't be done headlessly):** actually clicking a generated invite link, completing sign-up via a real email inbox, and confirming the invitee lands on the dashboard with correct access — the magic-link email round trip needs a real inbox, same as the Phase 5 on-device install check.
+
+**Definition of done:** Kofi (or a future flatmate) can join by clicking a link, no manual SQL required. Code side is done and verified as far as possible without a live email round trip.
 
 ---
 

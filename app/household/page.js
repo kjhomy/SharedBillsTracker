@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import NavHeader from '../nav-header';
 import EditMembersForm from './edit-members-form';
 import EditRatiosForm from './edit-ratios-form';
+import AddMemberForm from './add-member-form';
 
 export default async function HouseholdPage() {
   const supabase = await createClient();
@@ -21,7 +22,7 @@ export default async function HouseholdPage() {
 
   const { data: members } = await supabase
     .from('household_members')
-    .select('id, name, joined_date, left_date')
+    .select('id, name, joined_date, left_date, user_id')
     .eq('household_id', household.household_id)
     .order('joined_date');
 
@@ -52,6 +53,9 @@ export default async function HouseholdPage() {
             every bill's split automatically.
           </p>
           <EditMembersForm members={members ?? []} householdId={household.household_id} />
+          <div className="mt-3">
+            <AddMemberForm householdId={household.household_id} />
+          </div>
 
           <h2 className="font-display text-xl font-semibold text-ink mt-10 mb-2">Category ratios</h2>
           <p className="text-sm text-ink/60 mb-6">
