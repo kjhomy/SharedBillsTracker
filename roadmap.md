@@ -102,11 +102,13 @@ Goal: the app tells you when something needs attention instead of silently guess
 
 Goal: installable, app-like, works offline for viewing.
 
-- [ ] Add proper app icons + complete `manifest.json` (currently a skeleton)
-- [ ] Add service worker for offline caching of dashboard/bill list views (viewing only — no offline write-queueing, per earlier decision)
+- [x] Add proper app icons + complete `manifest.json` (currently a skeleton) — vector icon source (`scripts/icon-source.svg` / `icon-source-maskable.svg`) rasterized via `sharp` (`scripts/generate-icons.mjs`) into Next's `icon.png`/`apple-icon.png` convention plus 192/512/maskable-512 for `manifest.json`. Also added `appleWebApp` metadata (standalone title, status bar style) for a proper iOS install.
+- [x] Add service worker for offline caching of dashboard/bill list views (viewing only — no offline write-queueing, per earlier decision) — hand-written `public/sw.js` (no `next-pwa` dependency): network-first-with-cache-fallback for page navigations, cache-first for hashed `_next/static` assets, same-origin GET only so Supabase calls and mutations are never touched. Registered in production only via `app/register-sw.js`.
 - [ ] Test "Add to Home Screen" flow on your phone
 
-**Definition of done:** the app installs on your phone's home screen and looks/feels native.
+**Bug found and fixed during this work:** the auth middleware's matcher predated Next's `icon.png`/`apple-icon.png` file convention (it only excluded the old `favicon.ico`) and didn't know about `sw.js` at all — both were being redirected to `/login` for signed-out requests. A redirected-to-HTML response would have made the browser reject the service worker registration outright and broken the installed icon. Fixed the matcher regex in `middleware.js`; verified via a local production build that `/sw.js`, `/icon.png`, `/apple-icon.png`, and `/manifest.json` all now return 200 with correct content types, and that the rendered `<head>` includes the manifest link, favicon, apple-touch-icon, and Apple PWA meta tags.
+
+**Definition of done:** the app installs on your phone's home screen and looks/feels native. Code side is done and verified via local build; on-device install test still needs you.
 
 ---
 
